@@ -31,7 +31,24 @@ class ListingService {
   }
 
   Future<void> createListing(ListingCreateDto dto) async {
-    await _dio.post('/Listings', data: dto.toJson());
+    final formData = FormData.fromMap({
+      'title': dto.title,
+      'trueCoinValue': dto.trueCoinValue,
+      'description': dto.description,
+      'address': dto.address,
+      'latitude': dto.latitude,
+      'longitude': dto.longitude,
+      'image': await MultipartFile.fromFile(
+        dto.imageUrl,
+        filename: 'upload.jpg',
+      ),
+    });
+
+    await _dio.post(
+      '/Listings',
+      data: formData,
+      options: Options(contentType: 'multipart/form-data'),
+    );
   }
 
   Future<void> updateListing(int id, ListingUpdateDto dto) async {
