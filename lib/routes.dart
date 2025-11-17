@@ -4,7 +4,7 @@ import 'screens/auth/login_screen.dart';
 import 'screens/home/main_screen.dart';
 import 'screens/auth/register_screen.dart';
 //import 'screens/home/home_screen.dart';
-//import 'screens/listing/listing_detail_screen.dart';
+import 'screens/listing/listing_detail_screen.dart';
 //import 'screens/trade/trade_screen.dart';
 //import 'screens/review/review_screen.dart';
 //import 'screens/wallet/wallet_screen.dart';
@@ -25,7 +25,7 @@ class AppRoutes {
     home: (_) => const MainScreen(),
     register: (_) => const RegisterScreen(),
     //home: (_) => const HomeScreen(),
-    //listingDetail: (_) => const ListingDetailScreen(),
+    listingDetail: (_) => const ListingDetailScreen(),
     //trade: (_) => const TradeScreen(),
     //review: (_) => const ReviewScreen(),
     //wallet: (_) => const WalletScreen(),

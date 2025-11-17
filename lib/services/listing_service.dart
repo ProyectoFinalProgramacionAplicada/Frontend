@@ -25,6 +25,11 @@ class ListingService {
     return (response.data as List).map((e) => ListingDto.fromJson(e)).toList();
   }
 
+  Future<ListingDto> getListingById(int id) async {
+    final response = await _dio.get('/Listings/$id');
+    return ListingDto.fromJson(response.data);
+  }
+
   Future<void> createListing(ListingCreateDto dto) async {
     await _dio.post('/Listings', data: dto.toJson());
   }
