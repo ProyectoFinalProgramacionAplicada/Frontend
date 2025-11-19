@@ -1,3 +1,4 @@
 {
-    "cmake.sourceDirectory": "C:/Users/Samuel/Proyectos Flutter/truekapp/linux"
+    "cmake.sourceDirectory": "C:/Users/Samuel/Proyectos Flutter/truekapp/linux",
+    "cmake.ignoreCMakeListsMissing": true
 }

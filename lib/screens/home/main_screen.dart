@@ -8,6 +8,9 @@ import 'package:geolocator/geolocator.dart';
 import '../../providers/trade_provider.dart';
 import '../../dto/trade/trade_status.dart';
 import '../../dto/trade/trade_dto.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io'; // Para mostrar el archivo de imagen
 
 
 class MainScreen extends StatefulWidget {
@@ -203,7 +206,7 @@ void initState() {
               listingProvider.isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : SizedBox(
-                      height: 160,
+                      height: 190,
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
                         // Usamos la longitud de la lista del provider
@@ -344,10 +347,31 @@ class _AddItemTabState extends State<_AddItemTab> {
   final _titleController = TextEditingController();
   final _descController = TextEditingController();
   final _valueController = TextEditingController();
-  final _imageUrlController = TextEditingController(); // Requerido por el DTO
+  
+  // MODIFICADO: Eliminamos _imageUrlController y añadimos _selectedImage
+  final ImagePicker _picker = ImagePicker();
+  XFile? _selectedImage; // Para guardar el archivo seleccionado
 
   // Estado de carga
   bool _isLoading = false;
+
+  /// Lógica para seleccionar una imagen de la galería
+  Future<void> _pickImage() async {
+    try {
+      final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+      if (image != null) {
+        setState(() {
+          _selectedImage = image;
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text("Error al seleccionar imagen: ${e.toString()}"),
+            backgroundColor: AppColors.errorColor),
+      );
+    }
+  }
 
   /// Lógica para manejar la publicación
   Future<void> _handlePublish() async {
@@ -356,10 +380,20 @@ class _AddItemTabState extends State<_AddItemTab> {
       return; // Si hay errores, no continuar
     }
 
+    // MODIFICADO: Validación de imagen
+    if (_selectedImage == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text("Por favor, seleccione una imagen"),
+            backgroundColor: AppColors.errorColor),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
-      // 2. Obtener la ubicación del dispositivo
+      // 2. Obtener la ubicación del dispositivo (sin cambios)
       Position position;
       try {
         LocationPermission permission = await Geolocator.checkPermission();
@@ -372,7 +406,6 @@ class _AddItemTabState extends State<_AddItemTab> {
         if (permission == LocationPermission.deniedForever) {
           throw Exception("Permiso de ubicación denegado permanentemente.");
         }
-        // Obtenemos la ubicación actual
         position = await Geolocator.getCurrentPosition(
             desiredAccuracy: LocationAccuracy.medium);
       } catch (e) {
@@ -382,7 +415,8 @@ class _AddItemTabState extends State<_AddItemTab> {
       // 3. Parsear valores de los controladores
       final title = _titleController.text;
       final description = _descController.text;
-      final imageUrl = _imageUrlController.text;
+      // MODIFICADO: Usamos la ruta (path) de la imagen seleccionada
+      final imagePath = _selectedImage!.path; 
       final trueCoinValue = double.tryParse(_valueController.text);
 
       if (trueCoinValue == null) {
@@ -394,14 +428,13 @@ class _AddItemTabState extends State<_AddItemTab> {
         title: title,
         description: description,
         trueCoinValue: trueCoinValue,
-        imageUrl: imageUrl, // El backend lo requiere
+        // MODIFICADO: Pasamos la ruta del archivo
+        imagePath: imagePath, 
         latitude: position.latitude,
         longitude: position.longitude,
-        // 'address' es opcional en el backend, por lo que no lo enviamos por ahora
       );
 
       // 5. Llamar al Provider
-      // Usamos 'listen: false' porque estamos dentro de una función
       await Provider.of<ListingProvider>(context, listen: false)
           .createListing(dto);
 
@@ -409,7 +442,7 @@ class _AddItemTabState extends State<_AddItemTab> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
             content: Text("Publicación creada con éxito"),
-            backgroundColor: AppColors.successColor), // Usando color de tu tema
+            backgroundColor: AppColors.successColor),
       );
       _clearForm();
     } catch (e) {
@@ -417,7 +450,7 @@ class _AddItemTabState extends State<_AddItemTab> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
             content: Text(e.toString().replaceAll("Exception: ", "")),
-            backgroundColor: AppColors.errorColor), // Usando color de tu tema
+            backgroundColor: AppColors.errorColor),
       );
     } finally {
       setState(() => _isLoading = false);
@@ -430,7 +463,10 @@ class _AddItemTabState extends State<_AddItemTab> {
     _titleController.clear();
     _descController.clear();
     _valueController.clear();
-    _imageUrlController.clear();
+    // MODIFICADO: Limpiamos la imagen
+    setState(() {
+      _selectedImage = null;
+    });
   }
 
   @override
@@ -438,14 +474,12 @@ class _AddItemTabState extends State<_AddItemTab> {
     _titleController.dispose();
     _descController.dispose();
     _valueController.dispose();
-    _imageUrlController.dispose();
+    // MODIFICADO: Ya no necesitamos el _imageUrlController
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Reemplazamos el Column simple por un Form con SingleChildScrollView
-    // para profesionalismo y evitar overflow del teclado.
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Form(
@@ -464,7 +498,6 @@ class _AddItemTabState extends State<_AddItemTab> {
                 controller: _descController,
                 decoration: const InputDecoration(labelText: 'Descripción'),
                 maxLines: 3,
-                // Descripción es opcional, no necesita validador
               ),
               const SizedBox(height: 8),
               TextFormField(
@@ -473,29 +506,69 @@ class _AddItemTabState extends State<_AddItemTab> {
                     const InputDecoration(labelText: 'Valor (TrueCoins)'),
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
-                // Filtro profesional para aceptar solo números y dos decimales
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))
                 ],
                 validator: (v) =>
                     v == null || v.isEmpty ? 'El valor es requerido' : null,
               ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _imageUrlController,
-                decoration: const InputDecoration(labelText: 'URL de la Imagen'),
-                keyboardType: TextInputType.url,
-                validator: (v) => v == null || v.isEmpty
-                    ? 'La URL de la imagen es requerida'
-                    : null,
+              const SizedBox(height: 16),
+
+              // --- MODIFICADO: UI para seleccionar imagen ---
+              Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade400),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    if (_selectedImage == null)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 40.0),
+                        child: Icon(Icons.image_outlined,
+                            size: 60, color: Colors.grey),
+                      )
+                    else
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: kIsWeb // <--- CORRECCIÓN PROFESIONAL AQUÍ
+                              ? Image.network(
+                                  _selectedImage!.path,
+                                  height: 200,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                )
+                              : Image.file(
+                                  File(_selectedImage!.path),
+                                  height: 200,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                ),
+                        ),
+                      ),
+                    TextButton.icon(
+                      onPressed: _pickImage,
+                      icon: const Icon(Icons.upload_file),
+                      label: Text(_selectedImage == null
+                          ? 'Seleccionar Imagen'
+                          : 'Cambiar Imagen'),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                ),
               ),
+              // --- FIN DE MODIFICACIÓN DE UI ---
+
               const SizedBox(height: 16),
 
               // Botón de carga dinámico
               _isLoading
                   ? const CircularProgressIndicator()
                   : ElevatedButton(
-                      onPressed: _handlePublish, // Conectamos la lógica
+                      onPressed: _handlePublish,
                       child: const Text('Publicar'),
                     )
             ],

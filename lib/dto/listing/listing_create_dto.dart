@@ -1,6 +1,7 @@
 class ListingCreateDto {
   final String title;
-  final String imageUrl;
+  // MODIFICADO: Cambiamos de imageUrl a imagePath para reflejar que es una ruta local.
+  final String imagePath;
   final double trueCoinValue;
   final String? description;
   final String? address;
@@ -9,7 +10,7 @@ class ListingCreateDto {
 
   ListingCreateDto({
     required this.title,
-    required this.imageUrl,
+    required this.imagePath, // MODIFICADO
     required this.trueCoinValue,
     this.description,
     this.address,
@@ -20,7 +21,8 @@ class ListingCreateDto {
   factory ListingCreateDto.fromJson(Map<String, dynamic> json) {
     return ListingCreateDto(
       title: json['title'],
-      imageUrl: json['imageUrl'],
+      // MODIFICADO: Asumimos que el JSON de entrada (si lo hubiera) también usaría imagePath
+      imagePath: json['imagePath'], 
       trueCoinValue: (json['trueCoinValue'] as num).toDouble(),
       description: json['description'],
       address: json['address'],
@@ -31,7 +33,8 @@ class ListingCreateDto {
 
   Map<String, dynamic> toJson() => {
     'title': title,
-    'imageUrl': imageUrl,
+    // MODIFICADO:
+    'imagePath': imagePath, 
     'trueCoinValue': trueCoinValue,
     'description': description,
     'address': address,

@@ -38,9 +38,11 @@ class ListingService {
       'address': dto.address,
       'latitude': dto.latitude,
       'longitude': dto.longitude,
-      'image': await MultipartFile.fromFile(
-        dto.imageUrl,
-        filename: 'upload.jpg',
+      // MODIFICADO: La clave (key) debe ser "ImageFile" para coincidir con el DTO de C#
+      // MODIFICADO: Usamos dto.imagePath (la ruta local del archivo) en lugar de dto.imageUrl
+      'ImageFile': await MultipartFile.fromFile(
+        dto.imagePath,
+        filename: 'upload.jpg', // El nombre de archivo es arbitrario
       ),
     });
 
@@ -52,6 +54,8 @@ class ListingService {
   }
 
   Future<void> updateListing(int id, ListingUpdateDto dto) async {
+    // NOTA: La actualización (update) también necesitaría ser adaptada 
+    // para manejar 'ImageFile' si desea permitir cambiar la imagen.
     await _dio.put('/Listings/$id', data: dto.toJson());
   }
 
