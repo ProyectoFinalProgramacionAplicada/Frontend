@@ -1101,7 +1101,7 @@ class _WalletEntryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = _isPositive ? Colors.green : Colors.red;
-    final icon = _isPositive ? Icons.arrow_downward : Icons.arrow_upward;
+    final icon = _isPositive ? Icons.arrow_upward : Icons.arrow_downward;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),

@@ -1,7 +1,7 @@
 // lib/providers/wallet_provider.dart
 import 'package:flutter/material.dart';
+import '../dto/wallet/wallet_adjust_request.dart';
 import '../dto/wallet/wallet_balance_dto.dart';
-import '../dto/wallet/wallet_entry_dto.dart';
 import '../services/wallet_service.dart';
 
 class WalletProvider extends ChangeNotifier {
@@ -9,6 +9,7 @@ class WalletProvider extends ChangeNotifier {
 
   WalletBalanceDto? wallet;
   bool isLoading = false;
+  bool isAdjusting = false;
 
   Future<void> fetchWallet() async {
     isLoading = true;
@@ -22,8 +23,16 @@ class WalletProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> adjustBalance(WalletEntryDto dto) async {
-    await _service.adjustBalance(dto);
-    await fetchWallet();
+  Future<void> adjustBalance(WalletAdjustRequest request) async {
+    isAdjusting = true;
+    notifyListeners();
+
+    try {
+      await _service.adjustBalance(request);
+      await fetchWallet();
+    } finally {
+      isAdjusting = false;
+      notifyListeners();
+    }
   }
 }
