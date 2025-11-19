@@ -15,7 +15,8 @@ import '../../dto/wallet/wallet_entry_dto.dart';
 import '../../dto/wallet/wallet_entry_type.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'dart:io'; // Para mostrar el archivo de imagen
+import 'dart:typed_data';
+//import 'dart:io'; // Para mostrar el archivo de imagen
 
 
 class MainScreen extends StatefulWidget {
@@ -591,45 +592,59 @@ class _AddItemTabState extends State<_AddItemTab> {
   final _titleController = TextEditingController();
   final _descController = TextEditingController();
   final _valueController = TextEditingController();
-  
-  // MODIFICADO: Eliminamos _imageUrlController y añadimos _selectedImage
+
+  // Image picker
   final ImagePicker _picker = ImagePicker();
   XFile? _selectedImage; // Para guardar el archivo seleccionado
+
+  // NUEVO: datos reales que mandaremos al backend
+  Uint8List? _imageBytes;      // bytes de la imagen
+  String? _imageFileName;      // nombre del archivo
 
   // Estado de carga
   bool _isLoading = false;
 
   /// Lógica para seleccionar una imagen de la galería
+    /// Lógica para seleccionar una imagen de la galería
   Future<void> _pickImage() async {
     try {
-      final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+      final XFile? image =
+          await _picker.pickImage(source: ImageSource.gallery);
+
       if (image != null) {
+        // Leemos los bytes (funciona en Web y Mobile)
+        final bytes = await image.readAsBytes();
+
         setState(() {
           _selectedImage = image;
+          _imageBytes = bytes;
+          _imageFileName = image.name;
         });
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text("Error al seleccionar imagen: ${e.toString()}"),
-            backgroundColor: AppColors.errorColor),
+          content: Text("Error al seleccionar imagen: ${e.toString()}"),
+          backgroundColor: AppColors.errorColor,
+        ),
       );
     }
   }
 
-  /// Lógica para manejar la publicación
+    /// Lógica para manejar la publicación
   Future<void> _handlePublish() async {
     // 1. Validar el formulario
     if (!_formKey.currentState!.validate()) {
-      return; // Si hay errores, no continuar
+      return;
     }
 
-    // MODIFICADO: Validación de imagen
-    if (_selectedImage == null) {
+    // Validar imagen
+    if (_selectedImage == null || _imageBytes == null || _imageFileName == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text("Por favor, seleccione una imagen"),
-            backgroundColor: AppColors.errorColor),
+          content: Text("Por favor, seleccione una imagen"),
+          backgroundColor: AppColors.errorColor,
+        ),
       );
       return;
     }
@@ -637,7 +652,7 @@ class _AddItemTabState extends State<_AddItemTab> {
     setState(() => _isLoading = true);
 
     try {
-      // 2. Obtener la ubicación del dispositivo (sin cambios)
+      // 2. Obtener la ubicación del dispositivo
       Position position;
       try {
         LocationPermission permission = await Geolocator.checkPermission();
@@ -651,7 +666,8 @@ class _AddItemTabState extends State<_AddItemTab> {
           throw Exception("Permiso de ubicación denegado permanentemente.");
         }
         position = await Geolocator.getCurrentPosition(
-            desiredAccuracy: LocationAccuracy.medium);
+          desiredAccuracy: LocationAccuracy.medium,
+        );
       } catch (e) {
         throw Exception("Error al obtener ubicación: ${e.toString()}");
       }
@@ -659,8 +675,6 @@ class _AddItemTabState extends State<_AddItemTab> {
       // 3. Parsear valores de los controladores
       final title = _titleController.text;
       final description = _descController.text;
-      // MODIFICADO: Usamos la ruta (path) de la imagen seleccionada
-      final imagePath = _selectedImage!.path; 
       final trueCoinValue = double.tryParse(_valueController.text);
 
       if (trueCoinValue == null) {
@@ -672,10 +686,10 @@ class _AddItemTabState extends State<_AddItemTab> {
         title: title,
         description: description,
         trueCoinValue: trueCoinValue,
-        // MODIFICADO: Pasamos la ruta del archivo
-        imagePath: imagePath, 
         latitude: position.latitude,
         longitude: position.longitude,
+        imageBytes: _imageBytes!,          // 🔥 bytes reales
+        imageFileName: _imageFileName!,    // 🔥 nombre de archivo
       );
 
       // 5. Llamar al Provider
@@ -685,33 +699,38 @@ class _AddItemTabState extends State<_AddItemTab> {
       // 6. Éxito
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text("Publicación creada con éxito"),
-            backgroundColor: AppColors.successColor),
+          content: Text("Publicación creada con éxito"),
+          backgroundColor: AppColors.successColor,
+        ),
       );
       _clearForm();
     } catch (e) {
       // 7. Error
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text(e.toString().replaceAll("Exception: ", "")),
-            backgroundColor: AppColors.errorColor),
+          content: Text(e.toString().replaceAll("Exception: ", "")),
+          backgroundColor: AppColors.errorColor,
+        ),
       );
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
-  /// Limpia los campos del formulario después de publicar
+
+    /// Limpia los campos del formulario después de publicar
   void _clearForm() {
     _formKey.currentState?.reset();
     _titleController.clear();
     _descController.clear();
     _valueController.clear();
-    // MODIFICADO: Limpiamos la imagen
     setState(() {
       _selectedImage = null;
+      _imageBytes = null;
+      _imageFileName = null;
     });
   }
+
 
   @override
   void dispose() {
@@ -759,7 +778,7 @@ class _AddItemTabState extends State<_AddItemTab> {
               const SizedBox(height: 16),
 
               // --- MODIFICADO: UI para seleccionar imagen ---
-              Container(
+                            Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
                   border: Border.all(color: Colors.grey.shade400),
@@ -767,38 +786,36 @@ class _AddItemTabState extends State<_AddItemTab> {
                 ),
                 child: Column(
                   children: [
-                    if (_selectedImage == null)
+                    if (_imageBytes == null)
                       const Padding(
                         padding: EdgeInsets.symmetric(vertical: 40.0),
-                        child: Icon(Icons.image_outlined,
-                            size: 60, color: Colors.grey),
+                        child: Icon(
+                          Icons.image_outlined,
+                          size: 60,
+                          color: Colors.grey,
+                        ),
                       )
                     else
                       Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                          child: kIsWeb // <--- CORRECCIÓN PROFESIONAL AQUÍ
-                              ? Image.network(
-                                  _selectedImage!.path,
-                                  height: 200,
-                                  width: double.infinity,
-                                  fit: BoxFit.cover,
-                                )
-                              : Image.file(
-                                  File(_selectedImage!.path),
-                                  height: 200,
-                                  width: double.infinity,
-                                  fit: BoxFit.cover,
-                                ),
+                          child: Image.memory(
+                            _imageBytes!,
+                            height: 200,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          ),
                         ),
                       ),
                     TextButton.icon(
                       onPressed: _pickImage,
                       icon: const Icon(Icons.upload_file),
-                      label: Text(_selectedImage == null
-                          ? 'Seleccionar Imagen'
-                          : 'Cambiar Imagen'),
+                      label: Text(
+                        _selectedImage == null
+                            ? 'Seleccionar Imagen'
+                            : 'Cambiar Imagen',
+                      ),
                     ),
                     const SizedBox(height: 8),
                   ],

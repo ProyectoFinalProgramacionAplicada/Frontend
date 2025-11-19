@@ -31,26 +31,25 @@ class ListingService {
   }
 
   Future<void> createListing(ListingCreateDto dto) async {
-    final formData = FormData.fromMap({
-      'title': dto.title,
-      'trueCoinValue': dto.trueCoinValue,
-      'description': dto.description,
-      'address': dto.address,
-      'latitude': dto.latitude,
-      'longitude': dto.longitude,
-      // MODIFICADO: La clave (key) debe ser "ImageFile" para coincidir con el DTO de C#
-      // MODIFICADO: Usamos dto.imagePath (la ruta local del archivo) en lugar de dto.imageUrl
-      'ImageFile': await MultipartFile.fromFile(
-        dto.imagePath,
-        filename: 'upload.jpg', // El nombre de archivo es arbitrario
-      ),
-    });
+  final formData = FormData.fromMap({
+    'Title': dto.title,
+    'TrueCoinValue': dto.trueCoinValue,
+    'Description': dto.description,
+    'Address': dto.address,
+    'Latitude': dto.latitude,
+    'Longitude': dto.longitude,
 
-    await _dio.post(
-      '/Listings',
-      data: formData,
-      options: Options(contentType: 'multipart/form-data'),
-    );
+    'ImageFile': MultipartFile.fromBytes(
+      dto.imageBytes,
+      filename: dto.imageFileName,
+    ),
+  });
+
+  await _dio.post(
+    '/Listings',
+    data: formData,
+    options: Options(contentType: 'multipart/form-data'),
+  );
   }
 
   Future<void> updateListing(int id, ListingUpdateDto dto) async {
