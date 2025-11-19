@@ -5,6 +5,7 @@ import 'screens/home/main_screen.dart';
 import 'screens/auth/register_screen.dart';
 //import 'screens/home/home_screen.dart';
 import 'screens/listing/listing_detail_screen.dart';
+import 'screens/wallet/wallet_screen.dart';
 //import 'screens/trade/trade_screen.dart';
 //import 'screens/review/review_screen.dart';
 //import 'screens/wallet/wallet_screen.dart';
@@ -28,7 +29,7 @@ class AppRoutes {
     listingDetail: (_) => const ListingDetailScreen(),
     //trade: (_) => const TradeScreen(),
     //review: (_) => const ReviewScreen(),
-    //wallet: (_) => const WalletScreen(),
+    wallet: (_) => const WalletScreen(),
     //settings: (_) => const SettingsScreen(),
   };
 }
