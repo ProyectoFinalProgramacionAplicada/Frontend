@@ -1,8 +1,12 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/market_provider.dart';
+import '../../providers/wallet_provider.dart';
+import '../../dto/wallet/wallet_adjust_request.dart';
 
 class WalletScreen extends StatefulWidget {
 	const WalletScreen({super.key});
@@ -24,6 +28,7 @@ class _WalletScreenState extends State<WalletScreen> {
 			final market = Provider.of<MarketProvider>(context, listen: false);
 			market.fetchRate();
 			market.startAutoRefresh();
+			Provider.of<WalletProvider>(context, listen: false).fetchWallet();
 		});
 	}
 
@@ -53,34 +58,81 @@ class _WalletScreenState extends State<WalletScreen> {
 		});
 	}
 
+	String _mapDioError(DioException error) {
+		if (error.response?.statusCode == 403) {
+			return 'El servidor rechazó la recarga (403). Tu cuenta no tiene permisos para usar este endpoint. Contacta a soporte para habilitarlo.';
+		}
+		final data = error.response?.data;
+		if (data is Map && data['message'] is String) {
+			return data['message'] as String;
+		}
+		return error.message ?? 'Ocurrió un error al confirmar el pago.';
+	}
+
 	Future<void> _handleConfirm(BuildContext context) async {
-		final market = Provider.of<MarketProvider>(context, listen: false);
+		final market = context.read<MarketProvider>();
+		final walletProvider = context.read<WalletProvider>();
+		final auth = context.read<AuthProvider>();
 		final bobPerCoin = _bobPerTrueCoin(market);
 		final trueCoins = _trueCoinsToReceive(_bobAmount, bobPerCoin);
 		if (trueCoins == null || trueCoins <= 0) {
+			if (!mounted) return;
 			ScaffoldMessenger.of(context).showSnackBar(
 				const SnackBar(content: Text('Ingresa un monto válido en bolivianos.')),
 			);
 			return;
 		}
 
-		// TODO: Integrar con endpoint real de recarga cuando esté disponible
-		if (!mounted) return;
-		ScaffoldMessenger.of(context).showSnackBar(
-			SnackBar(
-				content: Text(
-					'Confirmado: Recibirás ${trueCoins.toStringAsFixed(2)} TrueCoins.',
-				),
-			),
+		final userId = auth.user?.id;
+		if (userId == null) {
+			if (!mounted) return;
+			ScaffoldMessenger.of(context).showSnackBar(
+				const SnackBar(content: Text('No se pudo identificar al usuario. Inicia sesión nuevamente.')),
+			);
+			return;
+		}
+
+		final request = WalletAdjustRequest(
+			userId: userId,
+			amount: trueCoins,
+			reason: 'Recarga desde app',
 		);
+
+		try {
+			await walletProvider.adjustBalance(request);
+			if (!mounted) return;
+			_bobController.clear();
+			setState(() {
+				_bobAmount = null;
+			});
+			final newBalance = walletProvider.wallet?.balance;
+			final message = newBalance != null
+					? 'Recarga exitosa. Nuevo balance: ${newBalance.toStringAsFixed(2)} TrueCoins.'
+					: 'Recarga exitosa.';
+			ScaffoldMessenger.of(context).showSnackBar(
+				SnackBar(content: Text(message)),
+			);
+		} on DioException catch (error) {
+			if (!mounted) return;
+			ScaffoldMessenger.of(context).showSnackBar(
+				SnackBar(content: Text(_mapDioError(error))),
+			);
+		} catch (_) {
+			if (!mounted) return;
+			ScaffoldMessenger.of(context).showSnackBar(
+				const SnackBar(
+					content: Text('No se pudo confirmar el pago. Intenta de nuevo.'),
+				),
+			);
+		}
 	}
 
 	@override
 	Widget build(BuildContext context) {
 		return Scaffold(
 			appBar: AppBar(title: const Text('Recargar TrueCoins')),
-			body: Consumer<MarketProvider>(
-				builder: (context, marketProvider, child) {
+			body: Consumer2<MarketProvider, WalletProvider>(
+				builder: (context, marketProvider, walletProvider, child) {
 					final bobPerCoin = _bobPerTrueCoin(marketProvider);
 					final trueCoins = _trueCoinsToReceive(_bobAmount, bobPerCoin);
 					final isWide = MediaQuery.of(context).size.width > 900;
@@ -115,6 +167,7 @@ class _WalletScreenState extends State<WalletScreen> {
 															width: 320,
 															child: _ConfirmCard(
 																isLoading: marketProvider.isLoading,
+																isProcessing: walletProvider.isAdjusting,
 																trueCoins: trueCoins,
 																bobAmount: _bobAmount,
 																onConfirm: () => _handleConfirm(context),
@@ -133,6 +186,7 @@ class _WalletScreenState extends State<WalletScreen> {
 														const SizedBox(height: 24),
 														_ConfirmCard(
 															isLoading: marketProvider.isLoading,
+															isProcessing: walletProvider.isAdjusting,
 															trueCoins: trueCoins,
 															bobAmount: _bobAmount,
 															onConfirm: () => _handleConfirm(context),
@@ -317,12 +371,14 @@ class _TopUpForm extends StatelessWidget {
 
 class _ConfirmCard extends StatelessWidget {
 	final bool isLoading;
+	final bool isProcessing;
 	final double? trueCoins;
 	final double? bobAmount;
 	final VoidCallback onConfirm;
 
 	const _ConfirmCard({
 		required this.isLoading,
+		required this.isProcessing,
 		required this.trueCoins,
 		required this.bobAmount,
 		required this.onConfirm,
@@ -330,7 +386,7 @@ class _ConfirmCard extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		final canConfirm = !isLoading && trueCoins != null && trueCoins! > 0;
+		final canConfirm = !isLoading && !isProcessing && trueCoins != null && trueCoins! > 0;
 
 		return Card(
 			shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -354,8 +410,17 @@ class _ConfirmCard extends StatelessWidget {
 						const SizedBox(height: 24),
 						ElevatedButton.icon(
 							onPressed: canConfirm ? onConfirm : null,
-							icon: const Icon(Icons.check_circle_outline),
-							label: const Text('Confirmar pago'),
+							icon: isProcessing
+								? const SizedBox(
+										width: 20,
+										height: 20,
+										child: CircularProgressIndicator(
+											strokeWidth: 2,
+											valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+										),
+									)
+							: const Icon(Icons.check_circle_outline),
+							label: Text(isProcessing ? 'Procesando...' : 'Confirmar pago'),
 							style: ElevatedButton.styleFrom(
 								minimumSize: const Size(double.infinity, 50),
 							),
