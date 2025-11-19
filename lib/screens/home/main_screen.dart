@@ -28,6 +28,17 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
+  // Índice visible en el BottomNavigationBar (0..3 para la versión web demo)
+  int _visibleNavIndex = 0;
+
+  // Map desde el índice visible del nav hacia el índice real de la página
+  // Mantiene la pantalla "Explorar" en el array _pages (índice 1), pero
+  // la oculta de la barra inferior y remapea los índices visibles a las páginas:
+  // visible 0 -> page 0 (Home)
+  // visible 1 -> page 2 (Publicar)
+  // visible 2 -> page 3 (Mensajes)
+  // visible 3 -> page 4 (Billetera)
+  final List<int> _navIndexToPage = [0, 2, 3, 4];
 
   List<Widget> get _pages => [
         _HomeTab(),
@@ -48,15 +59,27 @@ class _MainScreenState extends State<MainScreen> {
           icon: const Icon(Icons.menu),
           onPressed: () => _showMenu(context, auth),
         ),
+        //actions: [
+          //IconButton(
+            //tooltip: 'Debug token',
+            //icon: const Icon(Icons.bug_report_outlined),
+            //onPressed: () => Navigator.pushNamed(context, '/debug-token'),
+          //),
+        //], Revisarrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr
       ),
       body: _pages[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (i) => setState(() => _currentIndex = i),
+        // mostramos el índice visible (0..3) en la UI
+        currentIndex: _visibleNavIndex,
+        onTap: (i) => setState(() {
+              // remapeamos al índice real de la página
+              _visibleNavIndex = i;
+              _currentIndex = _navIndexToPage[i];
+            }),
         type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Explorar'),
+          // BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Explorar'),
           BottomNavigationBarItem(icon: Icon(Icons.add_circle_outline), label: 'Publicar'),
           BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline), label: 'Mensajes'),
           BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet_outlined), label: 'Billetera'),
@@ -923,7 +946,14 @@ class _MessagesTabState extends State<_MessagesTab> {
                 child: const Icon(Icons.person_outline,
                     color: Colors.white), // Placeholder
               ),
-              title: Text('Trueque #${trade.id}'),
+              title: FutureBuilder<String?>(
+                future: tradeProvider.fetchListingTitle(trade.targetListingId),
+                initialData: tradeProvider.getCachedListingTitle(trade.targetListingId),
+                builder: (context, snapshot) {
+                  final title = snapshot.data ?? 'Trueque #${trade.id}';
+                  return Text(title);
+                },
+              ),
               subtitle: Text(
                 trade.message ?? 'Ver detalles del trueque...',
                 maxLines: 1,
@@ -940,17 +970,9 @@ class _MessagesTabState extends State<_MessagesTab> {
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
               ),
               onTap: () {
-                // --- PRÓXIMO PASO ---
-                // Aquí es donde debemos navegar a una nueva pantalla de chat.
-                // Como aún no existe, mostramos un SnackBar temporal.
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                        'TODO: Abrir pantalla de chat para Trade ID: ${trade.id}'),
-                  ),
-                );
-                // El código final sería:
-                // Navigator.pushNamed(context, AppRoutes.tradeChat, arguments: trade.id);
+                // Navegar a la pantalla de chat pasando el trade.id
+                Navigator.pushNamed(context, AppRoutes.tradeChat,
+                    arguments: trade.id);
               },
             );
           },

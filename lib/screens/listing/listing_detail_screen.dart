@@ -54,6 +54,18 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
 
   Future<void> _handleCreateTrade() async {
     if (_listingId == null) return;
+    final tradeProvider = Provider.of<TradeProvider>(context, listen: false);
+
+    // If provider already has a pending create for this listing, avoid sending again
+    if (tradeProvider.isCreatePendingFor(_listingId!)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Ya hay una oferta en proceso para este producto.'),
+            backgroundColor: AppColors.warningColor),
+      );
+      return;
+    }
+
     setState(() => _isCreatingTrade = true);
 
     final dto = TradeCreateDto(
@@ -61,20 +73,16 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
       message: _messageController.text.trim().isEmpty
           ? "Hola, estoy interesado en tu '${_listing!.title}'"
           : _messageController.text.trim(),
-      // Aquí se podrían añadir campos para ofrecer TrueCoins u otros items
     );
 
     try {
-      final tradeProvider = Provider.of<TradeProvider>(context, listen: false);
       await tradeProvider.createTrade(dto);
-
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
               content: Text('¡Oferta enviada!'),
               backgroundColor: AppColors.successColor),
         );
-        // Regresamos a la pantalla anterior (Home)
         Navigator.pop(context);
       }
     } catch (e) {
@@ -86,9 +94,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
         );
       }
     } finally {
-      if (mounted) {
-        setState(() => _isCreatingTrade = false);
-      }
+      if (mounted) setState(() => _isCreatingTrade = false);
     }
   }
 
