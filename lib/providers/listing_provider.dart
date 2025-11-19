@@ -11,6 +11,20 @@ class ListingProvider extends ChangeNotifier {
   List<ListingDto> listings = [];
   bool isLoading = false;
 
+  ListingDto? selectedListing;
+
+  Future<ListingDto> fetchListingById(int id) async {
+    isLoading = true;
+    notifyListeners();
+    try {
+      selectedListing = await _service.getListingById(id);
+      return selectedListing!;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
   // Fetch catalog
   Future<void> fetchCatalog({
     int? ownerId,

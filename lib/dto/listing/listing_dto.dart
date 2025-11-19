@@ -6,6 +6,9 @@ class ListingDto {
   final String imageUrl;
   final double latitude;
   final double longitude;
+  final String? description;
+  final int ownerUserId;
+  final String? ownerName;
 
   ListingDto({
     required this.id,
@@ -15,6 +18,9 @@ class ListingDto {
     required this.imageUrl,
     required this.latitude,
     required this.longitude,
+    this.description,
+    required this.ownerUserId,
+    this.ownerName,
   });
 
   factory ListingDto.fromJson(Map<String, dynamic> json) {
@@ -26,6 +32,9 @@ class ListingDto {
       imageUrl: json['imageUrl'],
       latitude: (json['latitude'] as num).toDouble(),
       longitude: (json['longitude'] as num).toDouble(),
+      description: json['description'],
+      ownerUserId: json['ownerUserId'],
+      ownerName: json['ownerName'],
     );
   }
 
@@ -37,5 +46,8 @@ class ListingDto {
     'imageUrl': imageUrl,
     'latitude': latitude,
     'longitude': longitude,
+    'description': description,
+    'ownerUserId': ownerUserId,
+    'ownerName': ownerName,
   };
 }
