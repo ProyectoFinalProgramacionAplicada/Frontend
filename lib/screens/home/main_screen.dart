@@ -65,8 +65,8 @@ class _MainScreenState extends State<MainScreen> {
             //icon: const Icon(Icons.bug_report_outlined),
             //onPressed: () => Navigator.pushNamed(context, '/debug-token'),
           //),
-        //], Revisarrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr
-      ),
+        //], Revisar
+      ), 
       body: _pages[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         // mostramos el índice visible (0..3) en la UI
@@ -88,7 +88,7 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  void _showMenu(BuildContext context, AuthProvider auth) {
+void _showMenu(BuildContext context, AuthProvider auth) {
     showModalBottomSheet(
       context: context,
       builder: (_) {
@@ -96,34 +96,22 @@ class _MainScreenState extends State<MainScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // --- OPCIÓN PERFIL CORREGIDA ---
               ListTile(
                 leading: const Icon(Icons.person),
                 title: const Text('Ver perfil'),
                 onTap: () {
-                  Navigator.pop(context);
-                  // Por ahora solo muestra diálogo sencillo
-                  showDialog(
-                      context: context,
-                      builder: (_) => AlertDialog(
-                            title: const Text('Perfil'),
-                            content: Text(auth.user != null
-                                ? 'Usuario: ${auth.user!.email}'
-                                : 'No hay usuario cargado'),
-                            actions: [
-                              TextButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  child: const Text('Cerrar'))
-                            ],
-                          ));
+                  Navigator.pop(context); // Cierra el menú
+                  Navigator.pushNamed(context, AppRoutes.profile); // Va a la pantalla nueva
                 },
               ),
+              // --- OPCIÓN CERRAR SESIÓN (Se mantiene igual) ---
               ListTile(
                 leading: const Icon(Icons.logout),
                 title: const Text('Cerrar sesión'),
                 onTap: () {
                   Navigator.pop(context);
                   auth.logout();
-                  // Volver al login
                   Navigator.pushReplacementNamed(context, '/login');
                 },
               ),
@@ -133,7 +121,7 @@ class _MainScreenState extends State<MainScreen> {
       },
     );
   }
-}
+  }
 
 // --- Tabs ---
 class _HomeTab extends StatefulWidget {
