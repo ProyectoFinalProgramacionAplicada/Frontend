@@ -175,4 +175,42 @@ class AuthService {
       return null;
     }
   }
+
+  // 1. Cambiar Contraseña
+  Future<bool> changePassword(String oldPassword, String newPassword) async {
+    try {
+      final response = await _dio.put('/Users/me/password', data: {
+        'oldPassword': oldPassword,
+        'newPassword': newPassword,
+      });
+      return response.statusCode == 200;
+    } on DioException catch (e) {
+      final msg = _extractMessageFromResponse(e.response?.data);
+      throw Exception(msg ?? 'Error al cambiar contraseña');
+    }
+  }
+
+  // 2. Subir Avatar
+  Future<String?> uploadAvatar(List<int> bytes, String fileName) async {
+    try {
+      // Usamos fromBytes en lugar de fromFile. ¡Esto funciona en Móvil y Web!
+      FormData formData = FormData.fromMap({
+        "file": MultipartFile.fromBytes(bytes, filename: fileName),
+      });
+
+      final response = await _dio.post(
+        '/Users/me/avatar',
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        // El backend devuelve: { "avatarUrl": "/uploads/..." }
+        return response.data['avatarUrl']; 
+      }
+      return null;
+    } on DioException catch (e) {
+      print("Error subiendo avatar: $e");
+      throw Exception('Error al subir imagen: ${e.message}');
+    }
+  }
 }

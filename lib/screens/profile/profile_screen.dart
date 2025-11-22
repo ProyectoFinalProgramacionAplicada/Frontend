@@ -1,11 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // Asumo que usas Provider por tu estructura
-import '../../core/utils/app_colors.dart'; // Asegúrate de que esta ruta sea correcta
+import 'package:image_picker/image_picker.dart';
 import '../../widgets/custom_input.dart';
 import '../../widgets/primary_button.dart';
 import '../../services/auth_service.dart';
 import '../../dto/auth/user_update_dto.dart';
-import '../../dto/auth/user_info_dto.dart';
+import '../../core/utils/app_colors.dart'; // Ajusta según tu estructura
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -17,17 +17,20 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final _authService = AuthService();
   final _formKey = GlobalKey<FormState>();
+  final _picker = ImagePicker();
   
-  // Controladores para los campos editables
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   
-  // Variable para el email (solo lectura) y Avatar
   String _email = '';
-  String? _avatarUrl;
+  String? _avatarUrl; // URL del backend
   
   bool _isLoading = true;
   bool _isSaving = false;
+
+  // URL base para imágenes (Ajusta según tu entorno: localhost o Azure)
+  // Para emulador Android usa: http://10.0.2.2:5129
+  final String _baseUrl = 'http://10.0.2.2:5129'; 
 
   @override
   void initState() {
@@ -35,85 +38,182 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadUserData();
   }
 
-  // 1. Cargar datos iniciales del Backend
   Future<void> _loadUserData() async {
     try {
       final user = await _authService.getMe();
       setState(() {
-        // Rellenamos los campos con la info que viene de la API
         _nameController.text = user.displayName ?? '';
         _phoneController.text = user.phone ?? '';
-        _email = user.email ?? 'No disponible';
+        _email = user.email ?? '';
         _avatarUrl = user.avatarUrl;
         _isLoading = false;
       });
     } catch (e) {
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al cargar perfil: $e')),
-      );
+      _showMessage('Error cargando perfil: $e', isError: true);
     }
   }
 
-  // 2. Guardar cambios
+  // Lógica para cambiar foto
+  Future<void> _pickAndUploadImage() async {
+    // 1. Seleccionar imagen
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    
+    if (image == null) return; // Usuario canceló
+
+    setState(() => _isLoading = true);
+    
+    try {
+      // 2. Leer los bytes de la imagen (Universal)
+      final bytes = await image.readAsBytes();
+      
+      // 3. Enviar bytes y nombre al servicio
+      final newUrl = await _authService.uploadAvatar(bytes, image.name);
+      
+      if (newUrl != null) {
+        setState(() => _avatarUrl = newUrl);
+        _showMessage('Foto actualizada correctamente');
+      }
+    } catch (e) {
+      _showMessage(e.toString(), isError: true);
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  // Lógica para actualizar texto
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isSaving = true);
-
-    final updateDto = UserUpdateDto(
-      displayName: _nameController.text.trim(),
-      phone: _phoneController.text.trim(),
-    );
-
     try {
-      final success = await _authService.updateProfile(updateDto);
+      final dto = UserUpdateDto(
+        displayName: _nameController.text.trim(),
+        phone: _phoneController.text.trim(),
+      );
+      
+      final success = await _authService.updateProfile(dto);
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('¡Perfil actualizado con éxito!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        // Opcional: Recargar datos para asegurar frescura
-        await _loadUserData(); 
+        _showMessage('Perfil actualizado');
+        // Opcional: recargar para asegurar datos
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString()),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showMessage(e.toString(), isError: true);
     } finally {
       setState(() => _isSaving = false);
     }
   }
 
+  // Diálogo para cambiar contraseña
+  void _showChangePasswordDialog() {
+    final oldPassCtrl = TextEditingController();
+    final newPassCtrl = TextEditingController();
+    final formPassKey = GlobalKey<FormState>();
+    bool isLoadingPass = false;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: const Text('Cambiar Contraseña'),
+              content: Form(
+                key: formPassKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CustomInput(
+                      controller: oldPassCtrl,
+                      label: 'Contraseña actual',
+                      hint: 'Ingresa tu clave actual',
+                      isPassword: true,
+                      validator: (v) => v!.isEmpty ? 'Requerido' : null,
+                    ),
+                    const SizedBox(height: 15),
+                    CustomInput(
+                      controller: newPassCtrl,
+                      label: 'Nueva contraseña',
+                      hint: 'Mínimo 6 caracteres',
+                      isPassword: true,
+                      validator: (v) => v!.length < 6 ? 'Mínimo 6 caracteres' : null,
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancelar'),
+                ),
+                ElevatedButton(
+                  onPressed: isLoadingPass ? null : () async {
+                    if (!formPassKey.currentState!.validate()) return;
+                    
+                    setStateDialog(() => isLoadingPass = true);
+                    try {
+                      await _authService.changePassword(
+                        oldPassCtrl.text,
+                        newPassCtrl.text,
+                      );
+                      Navigator.pop(context);
+                      _showMessage('Contraseña cambiada con éxito');
+                    } catch (e) {
+                      // Mostramos error en el snackbar principal, no en el dialogo
+                      Navigator.pop(context);
+                      _showMessage(e.toString(), isError: true);
+                    }
+                  },
+                  child: Text(isLoadingPass ? '...' : 'Cambiar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showMessage(String msg, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: isError ? Colors.red : Colors.green,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Construir la URL completa de la imagen si existe
+    ImageProvider? imageProvider;
+    if (_avatarUrl != null && _avatarUrl!.isNotEmpty) {
+        final fullUrl = _avatarUrl!.startsWith('http') 
+            ? _avatarUrl! 
+            : '$_baseUrl$_avatarUrl';
+            
+        // Imprimimos para depurar (mira tu consola de VS Code)
+        print("Intentando cargar imagen desde: $fullUrl"); 
+        
+        imageProvider = NetworkImage(fullUrl);
+    }
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Mi Perfil'),
-        elevation: 0,
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Mi Perfil')),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
-                  // --- SECCIÓN DE AVATAR ---
+                  // --- AVATAR ---
                   Center(
                     child: Stack(
                       children: [
                         CircleAvatar(
                           radius: 60,
-                          backgroundColor: Colors.grey[200],
-                          backgroundImage: _avatarUrl != null 
-                              ? NetworkImage("https://truekapp.azurewebsites.net$_avatarUrl") // Ajusta la URL base si es necesario
-                              : null,
+                          backgroundColor: Colors.grey[300],
+                          backgroundImage: imageProvider,
                           child: _avatarUrl == null
                               ? const Icon(Icons.person, size: 60, color: Colors.grey)
                               : null,
@@ -123,15 +223,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           right: 0,
                           child: CircleAvatar(
                             backgroundColor: Theme.of(context).primaryColor,
-                            radius: 18,
+                            radius: 20,
                             child: IconButton(
-                              icon: const Icon(Icons.camera_alt, size: 18, color: Colors.white),
-                              onPressed: () {
-                                // TODO: Implementar subida de imagen aquí
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Funcionalidad de foto pendiente de implementar en UI')),
-                                );
-                              },
+                              icon: const Icon(Icons.camera_alt, size: 20, color: Colors.white),
+                              onPressed: _pickAndUploadImage,
                             ),
                           ),
                         ),
@@ -140,50 +235,55 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const SizedBox(height: 30),
 
-                  // --- FORMULARIO DE DATOS ---
+                  // --- FORMULARIO ---
                   Form(
                     key: _formKey,
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Email (Solo Lectura - Estética grisácea para indicar inhabilitado)
-                        _buildReadOnlyField("Correo Electrónico", _email),
-                        const SizedBox(height: 20),
-
-                        // Nombre Visible (Editable)
-                        // Nota: Uso CustomInput asumiendo sus parámetros. Ajusta si tu widget es diferente.
+                        // Nombre
                         CustomInput(
                           controller: _nameController,
-                          hint: 'Tu nombre visible',
-                          label: 'Nombre de Usuario', // Si tu CustomInput tiene label
-                          keyboardType: TextInputType.name,
-                          // Validación simple
+                          label: 'Nombre Visible',
+                          hint: 'Ej. Juan Perez',
+                          validator: (v) => v!.isEmpty ? 'Requerido' : null,
+                        ),
+                        const SizedBox(height: 20),
+                        
+                        // Teléfono con validación
+                        CustomInput(
+                          controller: _phoneController,
+                          label: 'Teléfono',
+                          hint: '+591 70000000',
+                          keyboardType: TextInputType.phone,
                           validator: (value) {
-                             if (value == null || value.isEmpty) return 'El nombre es obligatorio';
-                             return null;
+                            if (value == null || value.isEmpty) return 'Requerido';
+                            // Regex para código país (ej: +591...)
+                            final regex = RegExp(r'^\+[0-9]{1,3}\s?[0-9]{6,14}$');
+                            if (!regex.hasMatch(value)) {
+                              return 'Incluye código país (ej. +591 74666380)';
+                            }
+                            return null;
                           },
                         ),
                         const SizedBox(height: 20),
-
-                        // Teléfono (Editable)
-                        CustomInput(
-                          controller: _phoneController,
-                          hint: 'Tu número de celular',
-                          label: 'Teléfono',
-                          keyboardType: TextInputType.phone,
+                        
+                        // Botón Cambiar Contraseña
+                        OutlinedButton.icon(
+                          onPressed: _showChangePasswordDialog,
+                          icon: const Icon(Icons.lock_outline),
+                          label: const Text('Cambiar Contraseña'),
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size(double.infinity, 50),
+                          ),
                         ),
                         
-                        const SizedBox(height: 40),
+                        const SizedBox(height: 30),
 
-                        // --- BOTÓN DE GUARDAR ---
-                        SizedBox(
-                          width: double.infinity,
-                          height: 50, // Tu botón ya tiene height por defecto, pero esto asegura el layout
-                          child: PrimaryButton(
-                            label: 'Actualizar Perfil', // CORREGIDO: Usamos 'label'
-                            isLoading: _isSaving,       // CORREGIDO: Usamos tu propiedad nativa de carga
-                            onPressed: _saveProfile,    // Siempre pasamos la función, el botón manejará el bloqueo si isLoading es true
-                          ),
+                        // Botón Guardar
+                        PrimaryButton(
+                          label: 'Guardar Cambios',
+                          onPressed: () => _saveProfile(),
+                          isLoading: _isSaving,
                         ),
                       ],
                     ),
@@ -191,30 +291,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ),
             ),
-    );
-  }
-
-  // Widget auxiliar para campos de solo lectura (Código limpio)
-  Widget _buildReadOnlyField(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
-        const SizedBox(height: 5),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
-          decoration: BoxDecoration(
-            color: Colors.grey[100],
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.grey[300]!),
-          ),
-          child: Text(
-            value,
-            style: TextStyle(color: Colors.grey[700], fontSize: 16),
-          ),
-        ),
-      ],
     );
   }
 }
