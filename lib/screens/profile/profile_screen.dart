@@ -30,7 +30,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // URL base para imágenes (Ajusta según tu entorno: localhost o Azure)
   // Para emulador Android usa: http://10.0.2.2:5129
-  final String _baseUrl = 'http://10.0.2.2:5129'; 
+  final String _baseUrl = 'http://localhost:5129'; 
 
   @override
   void initState() {
