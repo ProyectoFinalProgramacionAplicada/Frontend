@@ -165,6 +165,16 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
           const SizedBox(height: 12),
           TextField(
             controller: _messageController,
+            onTap: () {
+              // Prefill default message including the listing title when user
+              // taps the field and it is currently empty so they can edit it.
+              if (_messageController.text.trim().isEmpty && _listing != null) {
+                final defaultMsg = "Hola, estoy interesado en tu '${_listing!.title}'";
+                _messageController.text = defaultMsg;
+                _messageController.selection = TextSelection.fromPosition(
+                    TextPosition(offset: defaultMsg.length));
+              }
+            },
             decoration: InputDecoration(
               labelText: 'Mensaje inicial (Opcional)',
               hintText: "Hola, estoy interesado en tu '${_listing!.title}'...",
