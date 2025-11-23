@@ -22,6 +22,16 @@ class ReviewProvider extends ChangeNotifier {
     }
   }
 
+  // --- NUEVO MÉTODO: Para el Perfil Público ---
+  Future<List<UserReviewDto>> getReviewsByUser(int userId) async {
+    try {
+      return await _service.getUserReviews(userId);
+    } catch (e) {
+      print("Error fetching reviews: $e");
+      rethrow;
+    }
+  }
+
   Future<void> createReview(UserReviewCreateDto dto) async {
     await _service.createReview(dto);
     await fetchUserReviews(dto.toUserId);

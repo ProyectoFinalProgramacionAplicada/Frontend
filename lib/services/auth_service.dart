@@ -5,6 +5,8 @@ import '../dto/auth/user_login_dto.dart';
 import '../dto/auth/user_register_dto.dart';
 import '../dto/auth/token_dto.dart';
 import '../dto/auth/user_info_dto.dart';
+// AÑADIDO: El DTO para actualizar perfil
+import '../dto/auth/user_update_dto.dart'; 
 
 class ValidationException implements Exception {
   final Map<String, List<String>> errors;
@@ -22,12 +24,12 @@ class ValidationException implements Exception {
 
 class AuthService {
   final Dio _dio = ApiClient().dio;
+
   Future<TokenDto> login(UserLoginDto dto) async {
     try {
       final response = await _dio.post('/Auth/login', data: dto.toJson());
       final data = response.data;
       if (data is String) {
-        // backend might return plain token or stringified json
         try {
           final parsed = jsonDecode(data);
           if (parsed is Map<String, dynamic>) return TokenDto.fromJson(parsed);
@@ -36,7 +38,6 @@ class AuthService {
         }
       }
       if (data is Map<String, dynamic>) return TokenDto.fromJson(data);
-      // Fallback: try to coerce
       return TokenDto(token: data?.toString());
     } on DioException catch (e) {
       final resp = e.response;
@@ -58,10 +59,8 @@ class AuthService {
     try {
       await _dio.post('/Auth/register', data: dto.toJson());
     } on DioException catch (e) {
-      // Try to extract server error message
       final resp = e.response;
       if (resp != null) {
-        // If backend returned structured validation errors, throw ValidationException
         final body = resp.data;
         if (body is Map && body['errors'] != null && body['errors'] is Map) {
           final Map<String, List<String>> errors = {};
@@ -86,8 +85,6 @@ class AuthService {
     }
   }
 
-  /// Attempts to request a password reset. Many APIs use different routes; try candidates
-  /// and return a friendly message. If endpoint not available, returns informative message.
   Future<String> forgotPassword(String email) async {
     final candidates = [
       '/Auth/forgot-password',
@@ -104,7 +101,6 @@ class AuthService {
       } on DioException catch (e) {
         final resp = e.response;
         if (resp != null) {
-          // If 404 -> try next
           if (resp.statusCode == 404) continue;
           final serverMessage = _extractMessageFromResponse(resp.data);
           throw Exception(
@@ -134,20 +130,33 @@ class AuthService {
     throw Exception('Unexpected response format from /Auth/me');
   }
 
-  // Try to extract a readable message from the backend response body.
-  // Backend may return: string, { message: '...' }, { errors: { field: [...] } }, or a map.
+  // --- NUEVO MÉTODO: updateProfile ---
+  // Conecta con UsersController
+  Future<bool> updateProfile(UserUpdateDto dto) async {
+    try {
+      // IMPORTANTE: La ruta es /Users/me porque el backend lo definimos en UsersController
+      final response = await _dio.put('/Users/me', data: dto.toJson());
+      
+      // Si el backend devuelve 200 OK, todo salió bien
+      return response.statusCode == 200;
+    } on DioException catch (e) {
+      final serverMessage = _extractMessageFromResponse(e.response?.data);
+      throw Exception(
+        'Error al actualizar perfil: ${serverMessage ?? e.message}',
+      );
+    }
+  }
+
   String? _extractMessageFromResponse(dynamic data) {
     try {
       if (data == null) return null;
       if (data is String) return data;
       if (data is Map) {
-        // common shapes
         if (data['message'] != null) return data['message'].toString();
         if (data['error'] != null) return data['error'].toString();
         if (data['errors'] != null) {
           final errors = data['errors'];
           if (errors is Map) {
-            // join field messages
             final msgs = <String>[];
             errors.forEach((k, v) {
               if (v is List)
@@ -159,12 +168,49 @@ class AuthService {
           }
           return errors.toString();
         }
-        // If map looks like the token or user object, return null (no message)
         return null;
       }
       return data.toString();
     } catch (_) {
       return null;
+    }
+  }
+
+  // 1. Cambiar Contraseña
+  Future<bool> changePassword(String oldPassword, String newPassword) async {
+    try {
+      final response = await _dio.put('/Users/me/password', data: {
+        'oldPassword': oldPassword,
+        'newPassword': newPassword,
+      });
+      return response.statusCode == 200;
+    } on DioException catch (e) {
+      final msg = _extractMessageFromResponse(e.response?.data);
+      throw Exception(msg ?? 'Error al cambiar contraseña');
+    }
+  }
+
+  // 2. Subir Avatar
+  Future<String?> uploadAvatar(List<int> bytes, String fileName) async {
+    try {
+      // Usamos fromBytes en lugar de fromFile. ¡Esto funciona en Móvil y Web!
+      FormData formData = FormData.fromMap({
+        "file": MultipartFile.fromBytes(bytes, filename: fileName),
+      });
+
+      final response = await _dio.post(
+        '/Users/me/avatar',
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        // El backend devuelve: { "avatarUrl": "/uploads/..." }
+        return response.data['avatarUrl']; 
+      }
+      return null;
+    } on DioException catch (e) {
+      print("Error subiendo avatar: $e");
+      throw Exception('Error al subir imagen: ${e.message}');
     }
   }
 }
