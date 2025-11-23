@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../dto/auth/user_info_dto.dart';
 import '../dto/auth/user_login_dto.dart';
 import '../dto/auth/user_register_dto.dart';
+import '../dto/auth/user_update_dto.dart'; // <--- IMPORTANTE
 import '../services/auth_service.dart';
 import '../services/api_client.dart';
 
@@ -14,32 +15,24 @@ class AuthProvider extends ChangeNotifier {
   bool isLoading = false;
   bool get isLoggedIn => user != null;
 
-  // Login
+  // Getter para facilitar acceso
+  UserInfoDto? get currentUser => user;
+
   Future<void> login(String email, String password) async {
     isLoading = true;
     notifyListeners();
-
     try {
       final tokenDto = await _service.login(
         UserLoginDto(email: email, password: password),
       );
 
-      // ✅ Null-safety: verificar que token no sea null
-      if (tokenDto.token == null) {
-        throw Exception("Token no recibido desde el backend");
-      }
+      if (tokenDto.token == null) throw Exception("Token inválido");
 
-      ApiClient().setToken(tokenDto.token!); // ! seguro porque ya verificamos
+      ApiClient().setToken(tokenDto.token!);
+      
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('auth_token', tokenDto.token!);
 
-      // Persistir token localmente
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('auth_token', tokenDto.token!);
-      } catch (_) {
-        // No crítico: si falla el guardado, continuamos sin bloquear login
-      }
-
-      // Obtener información del usuario
       user = await _service.getMe();
     } catch (e) {
       rethrow;
@@ -49,8 +42,6 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Intenta cargar token almacenado y obtener info del usuario.
-  /// Devuelve true si logró restaurar sesión.
   Future<bool> tryAutoLogin() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -62,20 +53,15 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (_) {
-      // Si algo falla, limpiar token local
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.remove('auth_token');
-      } catch (_) {}
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('auth_token');
       return false;
     }
   }
 
-  // Register
   Future<void> register(UserRegisterDto dto) async {
     isLoading = true;
     notifyListeners();
-
     try {
       await _service.register(dto);
     } finally {
@@ -84,11 +70,50 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // Logout
+  // --- NUEVOS MÉTODOS DE EDICIÓN ---
+
+  // 1. Actualizar Datos (Nombre/Teléfono)
+  Future<void> updateProfile(UserUpdateDto dto) async {
+    isLoading = true;
+    notifyListeners();
+    try {
+      await _service.updateProfile(dto);
+      // Refrescamos los datos del usuario localmente
+      user = await _service.getMe(); 
+    } catch (e) {
+      rethrow;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // 2. Actualizar Avatar
+  Future<void> updateAvatar(List<int> bytes, String fileName) async {
+    isLoading = true;
+    notifyListeners();
+    try {
+      await _service.uploadAvatar(bytes, fileName);
+      user = await _service.getMe(); // Refrescar para ver la foto nueva
+    } catch (e) {
+      rethrow;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // 3. Cambiar Contraseña
+  Future<void> changePassword(String oldPassword, String newPassword) async {
+    // No necesitamos refrescar el usuario, solo llamar al servicio
+    await _service.changePassword(oldPassword, newPassword);
+  }
+
+  // ----------------------------------
+
   void logout() {
     ApiClient().clearToken();
     user = null;
-    // Limpiar token persistente
     SharedPreferences.getInstance().then((prefs) => prefs.remove('auth_token'));
     notifyListeners();
   }
