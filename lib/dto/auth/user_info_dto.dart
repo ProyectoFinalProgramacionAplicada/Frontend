@@ -6,6 +6,10 @@ class UserInfoDto {
   final AppRole role;
   final int? companyId;
   final double trueCoinBalance;
+  // --- NUEVOS CAMPOS ---
+  final String? displayName;
+  final String? phone;
+  final String? avatarUrl;
 
   UserInfoDto({
     required this.id,
@@ -13,10 +17,12 @@ class UserInfoDto {
     required this.role,
     this.companyId,
     required this.trueCoinBalance,
+    this.displayName,
+    this.phone,
+    this.avatarUrl,
   });
 
   factory UserInfoDto.fromJson(Map<String, dynamic> json) {
-    // Safe parsing with defaults for missing fields coming from backend
     int parseInt(dynamic v, [int defaultValue = 0]) {
       if (v == null) return defaultValue;
       if (v is int) return v;
@@ -42,8 +48,10 @@ class UserInfoDto {
         if (v is String) {
           final idx = int.tryParse(v);
           if (idx != null && idx >= 0 && idx < AppRole.values.length) return AppRole.values[idx];
-          // try to match by name
-          return AppRole.values.firstWhere((r) => r.toString().split('.').last.toLowerCase() == v.toLowerCase(), orElse: () => AppRole.User);
+          return AppRole.values.firstWhere(
+            (r) => r.toString().split('.').last.toLowerCase() == v.toLowerCase(), 
+            orElse: () => AppRole.User
+          );
         }
       } catch (_) {}
       return AppRole.User;
@@ -55,6 +63,10 @@ class UserInfoDto {
       role: parseRole(json['role']),
       companyId: json['companyId'] == null ? null : parseInt(json['companyId']),
       trueCoinBalance: parseDouble(json['trueCoinBalance']),
+      // --- MAPEO DE NUEVOS CAMPOS ---
+      displayName: json['displayName']?.toString(),
+      phone: json['phone']?.toString(),
+      avatarUrl: json['avatarUrl']?.toString(),
     );
   }
 
@@ -64,5 +76,8 @@ class UserInfoDto {
     'role': role.index,
     'companyId': companyId,
     'trueCoinBalance': trueCoinBalance,
+    'displayName': displayName,
+    'phone': phone,
+    'avatarUrl': avatarUrl,
   };
 }
