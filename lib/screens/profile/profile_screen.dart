@@ -1,296 +1,372 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import '../../widgets/custom_input.dart';
-import '../../widgets/primary_button.dart';
-import '../../services/auth_service.dart';
+import 'package:image_picker/image_picker.dart'; // Asegúrate de tener esta dependencia
+import 'package:provider/provider.dart';
+import '../../core/app_export.dart';
 import '../../dto/auth/user_update_dto.dart';
-import '../../core/utils/app_colors.dart'; // Ajusta según tu estructura
+import '../../dto/listing/listing_dto.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/listing_provider.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({Key? key}) : super(key: key);
+  const ProfileScreen({super.key});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final _authService = AuthService();
-  final _formKey = GlobalKey<FormState>();
-  final _picker = ImagePicker();
-  
-  final _nameController = TextEditingController();
-  final _phoneController = TextEditingController();
-  
-  String _email = '';
-  String? _avatarUrl; // URL del backend
-  
-  bool _isLoading = true;
-  bool _isSaving = false;
-
-  // URL base para imágenes (Ajusta según tu entorno: localhost o Azure)
-  // Para emulador Android usa: http://10.0.2.2:5129
-  final String _baseUrl = 'http://localhost:5129'; 
+  late Future<List<ListingDto>> _myListingsFuture;
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
     super.initState();
-    _loadUserData();
-  }
-
-  Future<void> _loadUserData() async {
-    try {
-      final user = await _authService.getMe();
-      setState(() {
-        _nameController.text = user.displayName ?? '';
-        _phoneController.text = user.phone ?? '';
-        _email = user.email ?? '';
-        _avatarUrl = user.avatarUrl;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
-      _showMessage('Error cargando perfil: $e', isError: true);
+    final userId = Provider.of<AuthProvider>(context, listen: false).currentUser?.id;
+    if (userId != null) {
+      _myListingsFuture = Provider.of<ListingProvider>(context, listen: false)
+          .getListingsByOwner(userId);
+    } else {
+      _myListingsFuture = Future.value([]);
     }
   }
 
-  // Lógica para cambiar foto
+  // --- LÓGICA DE EDICIÓN ---
+
+  // 1. Subir Foto
   Future<void> _pickAndUploadImage() async {
-    // 1. Seleccionar imagen
-    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-    
-    if (image == null) return; // Usuario canceló
-
-    setState(() => _isLoading = true);
-    
     try {
-      // 2. Leer los bytes de la imagen (Universal)
+      final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+      if (image == null) return;
+
       final bytes = await image.readAsBytes();
-      
-      // 3. Enviar bytes y nombre al servicio
-      final newUrl = await _authService.uploadAvatar(bytes, image.name);
-      
-      if (newUrl != null) {
-        setState(() => _avatarUrl = newUrl);
-        _showMessage('Foto actualizada correctamente');
-      }
-    } catch (e) {
-      _showMessage(e.toString(), isError: true);
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
+      final fileName = image.name;
 
-  // Lógica para actualizar texto
-  Future<void> _saveProfile() async {
-    if (!_formKey.currentState!.validate()) return;
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Subiendo imagen...")));
 
-    setState(() => _isSaving = true);
-    try {
-      final dto = UserUpdateDto(
-        displayName: _nameController.text.trim(),
-        phone: _phoneController.text.trim(),
+      await Provider.of<AuthProvider>(context, listen: false)
+          .updateAvatar(bytes, fileName);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("¡Foto actualizada!"), backgroundColor: Colors.green)
       );
-      
-      final success = await _authService.updateProfile(dto);
-      if (success) {
-        _showMessage('Perfil actualizado');
-        // Opcional: recargar para asegurar datos
-      }
     } catch (e) {
-      _showMessage(e.toString(), isError: true);
-    } finally {
-      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red)
+      );
     }
   }
 
-  // Diálogo para cambiar contraseña
-  void _showChangePasswordDialog() {
-    final oldPassCtrl = TextEditingController();
-    final newPassCtrl = TextEditingController();
-    final formPassKey = GlobalKey<FormState>();
-    bool isLoadingPass = false;
+  // 2. Editar Datos Básicos
+  void _showEditProfileDialog(BuildContext context, String? currentName, String? currentPhone) {
+    final nameController = TextEditingController(text: currentName);
+    final phoneController = TextEditingController(text: currentPhone);
 
     showDialog(
       context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setStateDialog) {
-            return AlertDialog(
-              title: const Text('Cambiar Contraseña'),
-              content: Form(
-                key: formPassKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CustomInput(
-                      controller: oldPassCtrl,
-                      label: 'Contraseña actual',
-                      hint: 'Ingresa tu clave actual',
-                      isPassword: true,
-                      validator: (v) => v!.isEmpty ? 'Requerido' : null,
-                    ),
-                    const SizedBox(height: 15),
-                    CustomInput(
-                      controller: newPassCtrl,
-                      label: 'Nueva contraseña',
-                      hint: 'Mínimo 6 caracteres',
-                      isPassword: true,
-                      validator: (v) => v!.length < 6 ? 'Mínimo 6 caracteres' : null,
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancelar'),
-                ),
-                ElevatedButton(
-                  onPressed: isLoadingPass ? null : () async {
-                    if (!formPassKey.currentState!.validate()) return;
-                    
-                    setStateDialog(() => isLoadingPass = true);
-                    try {
-                      await _authService.changePassword(
-                        oldPassCtrl.text,
-                        newPassCtrl.text,
-                      );
-                      Navigator.pop(context);
-                      _showMessage('Contraseña cambiada con éxito');
-                    } catch (e) {
-                      // Mostramos error en el snackbar principal, no en el dialogo
-                      Navigator.pop(context);
-                      _showMessage(e.toString(), isError: true);
-                    }
-                  },
-                  child: Text(isLoadingPass ? '...' : 'Cambiar'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+      builder: (ctx) => AlertDialog(
+        title: const Text("Editar Perfil"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(labelText: "Nombre Completo"),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: phoneController,
+              decoration: const InputDecoration(labelText: "Teléfono"),
+              keyboardType: TextInputType.phone,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancelar")),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                await Provider.of<AuthProvider>(context, listen: false).updateProfile(
+                  UserUpdateDto(
+                    displayName: nameController.text.trim(),
+                    phone: phoneController.text.trim(),
+                  ),
+                );
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Perfil actualizado"), backgroundColor: Colors.green)
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red)
+                );
+              }
+            },
+            child: const Text("Guardar"),
+          ),
+        ],
+      ),
     );
   }
 
-  void _showMessage(String msg, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: isError ? Colors.red : Colors.green,
+  // 3. Cambiar Contraseña
+  void _showChangePasswordDialog(BuildContext context) {
+    final oldPassController = TextEditingController();
+    final newPassController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Cambiar Contraseña"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: oldPassController,
+              decoration: const InputDecoration(labelText: "Contraseña Actual"),
+              obscureText: true,
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: newPassController,
+              decoration: const InputDecoration(labelText: "Nueva Contraseña"),
+              obscureText: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancelar")),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                await Provider.of<AuthProvider>(context, listen: false).changePassword(
+                  oldPassController.text,
+                  newPassController.text,
+                );
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Contraseña actualizada exitosamente"), backgroundColor: Colors.green)
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red)
+                );
+              }
+            },
+            child: const Text("Cambiar"),
+          ),
+        ],
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    // Construir la URL completa de la imagen si existe
-    ImageProvider? imageProvider;
-    if (_avatarUrl != null && _avatarUrl!.isNotEmpty) {
-        final fullUrl = _avatarUrl!.startsWith('http') 
-            ? _avatarUrl! 
-            : '$_baseUrl$_avatarUrl';
-            
-        // Imprimimos para depurar (mira tu consola de VS Code)
-        print("Intentando cargar imagen desde: $fullUrl"); 
-        
-        imageProvider = NetworkImage(fullUrl);
-    }
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.currentUser;
+
+    if (user == null) return const Scaffold(body: Center(child: Text("Sin sesión")));
+
+    final fullAvatarUrl = user.avatarUrl != null
+        ? '${AppConstants.apiBaseUrl}${user.avatarUrl}'
+        : null;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Mi Perfil')),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
+      appBar: AppBar(
+        title: const Text("Mi Perfil"),
+        actions: [
+          // Botón Editar Datos
+          IconButton(
+            icon: const Icon(Icons.edit),
+            tooltip: "Editar Datos",
+            onPressed: () => _showEditProfileDialog(context, user.displayName, user.phone),
+          ),
+          // Botón Logout
+          IconButton(
+            icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),
+            tooltip: "Cerrar Sesión",
+            onPressed: () {
+              authProvider.logout();
+              Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
+            },
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Column(
+          children: [
+            const SizedBox(height: 20),
+            
+            // --- SECCIÓN 1: AVATAR Y NOMBRE ---
+            Center(
+              child: Stack(
                 children: [
-                  // --- AVATAR ---
-                  Center(
-                    child: Stack(
-                      children: [
-                        CircleAvatar(
-                          radius: 60,
-                          backgroundColor: Colors.grey[300],
-                          backgroundImage: imageProvider,
-                          child: _avatarUrl == null
-                              ? const Icon(Icons.person, size: 60, color: Colors.grey)
-                              : null,
-                        ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: CircleAvatar(
-                            backgroundColor: Theme.of(context).primaryColor,
-                            radius: 20,
-                            child: IconButton(
-                              icon: const Icon(Icons.camera_alt, size: 20, color: Colors.white),
-                              onPressed: _pickAndUploadImage,
-                            ),
-                          ),
-                        ),
-                      ],
+                  // Avatar
+                  GestureDetector(
+                    onTap: _pickAndUploadImage, // Tocar para cambiar foto
+                    child: CircleAvatar(
+                      radius: 60,
+                      backgroundColor: AppColors.primary.withOpacity(0.1),
+                      backgroundImage: fullAvatarUrl != null ? NetworkImage(fullAvatarUrl) : null,
+                      child: fullAvatarUrl == null 
+                          ? Icon(Icons.person, size: 60, color: AppColors.primary)
+                          : null,
                     ),
                   ),
-                  const SizedBox(height: 30),
-
-                  // --- FORMULARIO ---
-                  Form(
-                    key: _formKey,
-                    child: Column(
-                      children: [
-                        // Nombre
-                        CustomInput(
-                          controller: _nameController,
-                          label: 'Nombre Visible',
-                          hint: 'Ej. Juan Perez',
-                          validator: (v) => v!.isEmpty ? 'Requerido' : null,
-                        ),
-                        const SizedBox(height: 20),
-                        
-                        // Teléfono con validación
-                        CustomInput(
-                          controller: _phoneController,
-                          label: 'Teléfono',
-                          hint: '+591 70000000',
-                          keyboardType: TextInputType.phone,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) return 'Requerido';
-                            // Regex para código país (ej: +591...)
-                            final regex = RegExp(r'^\+[0-9]{1,3}\s?[0-9]{6,14}$');
-                            if (!regex.hasMatch(value)) {
-                              return 'Incluye código país (ej. +591 74666380)';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 20),
-                        
-                        // Botón Cambiar Contraseña
-                        OutlinedButton.icon(
-                          onPressed: _showChangePasswordDialog,
-                          icon: const Icon(Icons.lock_outline),
-                          label: const Text('Cambiar Contraseña'),
-                          style: OutlinedButton.styleFrom(
-                            minimumSize: const Size(double.infinity, 50),
-                          ),
-                        ),
-                        
-                        const SizedBox(height: 30),
-
-                        // Botón Guardar
-                        PrimaryButton(
-                          label: 'Guardar Cambios',
-                          onPressed: () => _saveProfile(),
-                          isLoading: _isSaving,
-                        ),
-                      ],
+                  // Icono de cámara
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [BoxShadow(blurRadius: 3, color: Colors.black26)]
+                      ),
+                      child: Icon(Icons.camera_alt, size: 20, color: AppColors.primary),
                     ),
+                  )
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            Text(
+              user.displayName ?? "Sin Nombre",
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            Text(user.email ?? "", style: TextStyle(color: Colors.grey[600])),
+            if (user.phone != null && user.phone!.isNotEmpty)
+              Text(user.phone!, style: TextStyle(color: Colors.grey[600])),
+            
+            // Botón Cambiar Contraseña
+            TextButton.icon(
+              onPressed: () => _showChangePasswordDialog(context),
+              icon: const Icon(Icons.lock_outline, size: 16),
+              label: const Text("Cambiar Contraseña"),
+            ),
+
+            const SizedBox(height: 20),
+
+            // --- SECCIÓN 2: BALANCE ---
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 5))
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("Balance", style: TextStyle(color: Colors.white70)),
+                      SizedBox(height: 4),
+                      Icon(Icons.account_balance_wallet, color: Colors.white, size: 28),
+                    ],
+                  ),
+                  Text(
+                    "${user.trueCoinBalance.toStringAsFixed(2)} TC",
+                    style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
             ),
+
+            const SizedBox(height: 30),
+            
+            // --- SECCIÓN 3: MIS PRODUCTOS ---
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  "Mis Publicaciones",
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // Grid de Productos
+            FutureBuilder<List<ListingDto>>(
+              future: _myListingsFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Padding(padding: EdgeInsets.all(20), child: Center(child: CircularProgressIndicator()));
+                }
+                
+                final listings = snapshot.data ?? [];
+                if (listings.isEmpty) {
+                  return Container(
+                    padding: const EdgeInsets.all(30),
+                    child: const Text("No tienes productos activos.", style: TextStyle(color: Colors.grey)),
+                  );
+                }
+
+                return GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.75,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                  ),
+                  itemCount: listings.length,
+                  itemBuilder: (context, index) {
+                    final item = listings[index];
+                    return GestureDetector(
+                      onTap: () => Navigator.pushNamed(context, AppRoutes.listingDetail, arguments: item.id),
+                      child: Card(
+                        elevation: 2,
+                        clipBehavior: Clip.antiAlias,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Image.network(
+                                item.imageUrl,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                errorBuilder: (_,__,___) => Container(color: Colors.grey[200]),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  Text("${item.trueCoinValue} TC", style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12)),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+            const SizedBox(height: 40),
+          ],
+        ),
+      ),
     );
   }
 }

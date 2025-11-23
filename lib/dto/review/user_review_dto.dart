@@ -1,4 +1,3 @@
-// lib/dto/review/user_review_dto.dart
 class UserReviewDto {
   final int id;
   final int fromUserId;
@@ -6,6 +5,10 @@ class UserReviewDto {
   final int rating;
   final String? comment;
   final DateTime createdAt;
+  
+  // Nuevos campos
+  final String? fromUserName;
+  final String? fromUserAvatarUrl;
 
   UserReviewDto({
     required this.id,
@@ -14,6 +17,8 @@ class UserReviewDto {
     required this.rating,
     this.comment,
     required this.createdAt,
+    this.fromUserName,
+    this.fromUserAvatarUrl,
   });
 
   factory UserReviewDto.fromJson(Map<String, dynamic> json) {
@@ -24,15 +29,8 @@ class UserReviewDto {
       rating: json['rating'],
       comment: json['comment'],
       createdAt: DateTime.parse(json['createdAt']),
+      fromUserName: json['fromUserName'],
+      fromUserAvatarUrl: json['fromUserAvatarUrl'],
     );
   }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'fromUserId': fromUserId,
-    'toUserId': toUserId,
-    'rating': rating,
-    'comment': comment,
-    'createdAt': createdAt.toIso8601String(),
-  };
 }

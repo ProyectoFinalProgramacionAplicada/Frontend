@@ -6,18 +6,20 @@ import '../dto/listing/listing_update_dto.dart';
 import '../services/listing_service.dart';
 
 class ListingProvider extends ChangeNotifier {
-  final ListingService _service = ListingService();
+  // CORRECCIÓN: Usamos un nombre descriptivo consistente
+  final ListingService _listingService = ListingService();
 
   List<ListingDto> listings = [];
   bool isLoading = false;
 
   ListingDto? selectedListing;
 
+  // Obtener un producto por ID
   Future<ListingDto> fetchListingById(int id) async {
     isLoading = true;
     notifyListeners();
     try {
-      selectedListing = await _service.getListingById(id);
+      selectedListing = await _listingService.getListingById(id);
       return selectedListing!;
     } finally {
       isLoading = false;
@@ -25,7 +27,7 @@ class ListingProvider extends ChangeNotifier {
     }
   }
 
-  // Fetch catalog
+  // Obtener el catálogo (feed principal)
   Future<void> fetchCatalog({
     int? ownerId,
     String? q,
@@ -36,7 +38,7 @@ class ListingProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      listings = await _service.getCatalog(
+      listings = await _listingService.getCatalog(
         ownerId: ownerId,
         q: q,
         minValue: minValue,
@@ -48,21 +50,35 @@ class ListingProvider extends ChangeNotifier {
     }
   }
 
-  // Create listing
+  // Crear publicación
   Future<void> createListing(ListingCreateDto dto) async {
-    await _service.createListing(dto);
-    await fetchCatalog(); // Refresh list
+    await _listingService.createListing(dto);
+    await fetchCatalog(); // Refrescar la lista después de crear
   }
 
-  // Update listing
+  // Actualizar publicación
   Future<void> updateListing(int id, ListingUpdateDto dto) async {
-    await _service.updateListing(id, dto);
+    await _listingService.updateListing(id, dto);
     await fetchCatalog();
   }
 
-  // Delete listing
+  // Eliminar publicación
   Future<void> deleteListing(int id) async {
-    await _service.deleteListing(id);
+    await _listingService.deleteListing(id);
     await fetchCatalog();
+  }
+
+  // --- NUEVO MÉTODO PARA EL PERFIL DEL VENDEDOR ---
+  // Retorna la lista directamente sin modificar el estado global 'listings'
+  // para no afectar el feed principal cuando ves un perfil.
+  Future<List<ListingDto>> getListingsByOwner(int ownerId) async {
+    try {
+      // Ahora sí coincide el nombre de la variable
+      final result = await _listingService.getCatalog(ownerId: ownerId);
+      return result;
+    } catch (e) {
+      print("Error fetching owner listings: $e");
+      rethrow;
+    }
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:truekapp/screens/profile/seller_profile_screen.dart';
 import '../../providers/listing_provider.dart';
 import '../../providers/trade_provider.dart';
 import '../../dto/listing/listing_dto.dart';
@@ -149,8 +150,109 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                   color: AppColors.primary, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           // Dueño
-          Text('Publicado por: ${_listing!.ownerName ?? "Anónimo"}',
-              style: Theme.of(context).textTheme.bodyMedium),
+          // --- TARJETA DE VENDEDOR (Inicio) ---
+const SizedBox(height: 12),
+InkWell(
+  onTap: () {
+    // Navegar al nuevo perfil del vendedor
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SellerProfileScreen(
+          sellerId: _listing!.ownerUserId,
+          sellerName: _listing!.ownerName ?? "Anónimo",
+          sellerAvatarUrl: _listing!.ownerAvatarUrl,
+          sellerRating: _listing!.ownerRating,
+        ),
+      ),
+    );
+  },
+  borderRadius: BorderRadius.circular(12),
+  child: Container(
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      border: Border.all(color: Colors.grey.shade300),
+      borderRadius: BorderRadius.circular(12),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 5,
+          offset: const Offset(0, 2),
+        )
+      ],
+    ),
+    child: Row(
+      children: [
+        // Avatar
+        Hero(
+          tag: 'seller_${_listing!.ownerUserId}', // Debe coincidir con el tag en SellerProfile
+          child: CircleAvatar(
+            radius: 24,
+            backgroundImage: _listing!.ownerAvatarUrl != null
+                ? NetworkImage('${AppConstants.apiBaseUrl}${_listing!.ownerAvatarUrl}')
+                : null,
+            backgroundColor: AppColors.primary.withOpacity(0.1),
+            child: _listing!.ownerAvatarUrl == null
+                ? Icon(Icons.person, color: AppColors.primary)
+                : null,
+          ),
+        ),
+        const SizedBox(width: 12),
+        
+        // Info Nombre + Rating
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Vendido por:",
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+              ),
+              Text(
+                _listing!.ownerName ?? "Anónimo",
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        // Estrellas a la derecha
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.star, color: Colors.amber, size: 18),
+                const SizedBox(width: 4),
+                Text(
+                  _listing!.ownerRating > 0 
+                      ? _listing!.ownerRating.toStringAsFixed(1) 
+                      : "-",
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            Text(
+              "Ver perfil >",
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.primary,
+              ),
+            )
+          ],
+        ),
+      ],
+    ),
+  ),
+),
+// --- TARJETA DE VENDEDOR (Fin) ---
           const SizedBox(height: 16),
           // Descripción
           Text(_listing!.description ?? 'Sin descripción.',
