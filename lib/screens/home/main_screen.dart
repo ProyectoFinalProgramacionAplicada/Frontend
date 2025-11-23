@@ -17,6 +17,9 @@ import '../../dto/wallet/wallet_entry_dto.dart';
 import '../../dto/wallet/wallet_entry_type.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:geocoding/geocoding.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'dart:typed_data';
 import 'package:truekapp/screens/listing/pick_location_map_screen.dart';
 //import 'dart:io'; // Para mostrar el archivo de imagen
@@ -166,6 +169,9 @@ class _HomeTabState extends State<_HomeTab> {
   ListingProvider? _listingProvider;
   Position? _currentPosition;
 
+  // ← Aquí agregamos la variable para la ciudad
+  String _currentCity = 'Cargando...';
+
   String _formatCoins(double value) {
     return value % 1 == 0 ? value.toStringAsFixed(0) : value.toStringAsFixed(2);
   }
@@ -197,10 +203,58 @@ class _HomeTabState extends State<_HomeTab> {
     });
   }
 
+  Future<void> _updateCityFromPosition() async {
+    if (_currentPosition == null) return;
+
+    if (kIsWeb) {
+      // Web: usamos Nominatim API
+      final lat = _currentPosition!.latitude;
+      final lng = _currentPosition!.longitude;
+      final url =
+          'https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$lng&zoom=10&addressdetails=1';
+      try {
+        final response = await http.get(
+          Uri.parse(url),
+          headers: {'User-Agent': 'TruekApp/1.0 (your_email@example.com)'},
+        );
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          final city =
+              data['address']?['city'] ??
+              data['address']?['town'] ??
+              data['address']?['village'] ??
+              'Desconocida';
+          setState(() => _currentCity = city);
+        } else {
+          setState(() => _currentCity = 'Desconocida');
+        }
+      } catch (_) {
+        setState(() => _currentCity = 'Desconocida');
+      }
+    } else {
+      // Mobile: usamos geocoding
+      try {
+        final placemarks = await placemarkFromCoordinates(
+          _currentPosition!.latitude,
+          _currentPosition!.longitude,
+        );
+        if (placemarks.isNotEmpty) {
+          setState(
+            () => _currentCity = placemarks.first.locality ?? 'Desconocida',
+          );
+        } else {
+          setState(() => _currentCity = 'Desconocida');
+        }
+      } catch (_) {
+        setState(() => _currentCity = 'Desconocida');
+      }
+    }
+  }
+
   Future<void> _loadCurrentLocation() async {
     try {
       if (kIsWeb) {
-        final position = await html.window.navigator.geolocation!
+        final position = await html.window.navigator.geolocation
             .getCurrentPosition();
         if (!mounted) return;
         if (position.coords != null) {
@@ -218,6 +272,7 @@ class _HomeTabState extends State<_HomeTab> {
               headingAccuracy: 0.0, // obligatorio
             ),
           );
+          await _updateCityFromPosition();
         }
       } else {
         bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -234,6 +289,7 @@ class _HomeTabState extends State<_HomeTab> {
         final position = await Geolocator.getCurrentPosition();
         if (!mounted) return;
         setState(() => _currentPosition = position);
+        await _updateCityFromPosition();
       }
     } catch (_) {
       // Ignorar errores silenciosamente; la UI mostrará "Cerca de ti"
@@ -296,16 +352,16 @@ class _HomeTabState extends State<_HomeTab> {
                 children: [
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
+                    children: [
                       Text(
-                        'Ubicación: Ciudad de Ejemplo',
+                        'Ubicación: $_currentCity',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      SizedBox(height: 4),
-                      Text(
+                      const SizedBox(height: 4),
+                      const Text(
                         'TrueCoin Balance',
                         style: TextStyle(fontSize: 12, color: Colors.grey),
                       ),
