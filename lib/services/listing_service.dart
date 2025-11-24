@@ -25,35 +25,52 @@ class ListingService {
     return (response.data as List).map((e) => ListingDto.fromJson(e)).toList();
   }
 
+  Future<List<ListingDto>> getNearbyListings({
+    required double latitude,
+    required double longitude,
+    double radius = 25.0,
+  }) async {
+    final response = await _dio.get(
+      '/Listings/nearby',
+      queryParameters: {
+        'latitude': latitude,
+        'longitude': longitude,
+        'radiusInKm': radius,
+      },
+    );
+
+    return (response.data as List).map((e) => ListingDto.fromJson(e)).toList();
+  }
+
   Future<ListingDto> getListingById(int id) async {
     final response = await _dio.get('/Listings/$id');
     return ListingDto.fromJson(response.data);
   }
 
   Future<void> createListing(ListingCreateDto dto) async {
-  final formData = FormData.fromMap({
-    'Title': dto.title,
-    'TrueCoinValue': dto.trueCoinValue,
-    'Description': dto.description,
-    'Address': dto.address,
-    'Latitude': dto.latitude,
-    'Longitude': dto.longitude,
+    final formData = FormData.fromMap({
+      'Title': dto.title,
+      'TrueCoinValue': dto.trueCoinValue,
+      'Description': dto.description,
+      'Address': dto.address,
+      'Latitude': dto.latitude,
+      'Longitude': dto.longitude,
 
-    'ImageFile': MultipartFile.fromBytes(
-      dto.imageBytes,
-      filename: dto.imageFileName,
-    ),
-  });
+      'ImageFile': MultipartFile.fromBytes(
+        dto.imageBytes,
+        filename: dto.imageFileName,
+      ),
+    });
 
-  await _dio.post(
-    '/Listings',
-    data: formData,
-    options: Options(contentType: 'multipart/form-data'),
-  );
+    await _dio.post(
+      '/Listings',
+      data: formData,
+      options: Options(contentType: 'multipart/form-data'),
+    );
   }
 
   Future<void> updateListing(int id, ListingUpdateDto dto) async {
-    // NOTA: La actualización (update) también necesitaría ser adaptada 
+    // NOTA: La actualización (update) también necesitaría ser adaptada
     // para manejar 'ImageFile' si desea permitir cambiar la imagen.
     await _dio.put('/Listings/$id', data: dto.toJson());
   }

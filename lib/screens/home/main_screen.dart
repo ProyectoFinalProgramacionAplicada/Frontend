@@ -105,7 +105,7 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-void _showMenu(BuildContext context, AuthProvider auth) {
+  void _showMenu(BuildContext context, AuthProvider auth) {
     showModalBottomSheet(
       context: context,
       builder: (_) {
@@ -119,7 +119,10 @@ void _showMenu(BuildContext context, AuthProvider auth) {
                 title: const Text('Ver perfil'),
                 onTap: () {
                   Navigator.pop(context); // Cierra el menú
-                  Navigator.pushNamed(context, AppRoutes.profile); // Va a la pantalla nueva
+                  Navigator.pushNamed(
+                    context,
+                    AppRoutes.profile,
+                  ); // Va a la pantalla nueva
                 },
               ),
               // --- OPCIÓN CERRAR SESIÓN (Se mantiene igual) ---
@@ -138,7 +141,7 @@ void _showMenu(BuildContext context, AuthProvider auth) {
       },
     );
   }
-  }
+}
 
 // --- Tabs ---
 class _HomeTab extends StatefulWidget {
@@ -257,6 +260,7 @@ class _HomeTabState extends State<_HomeTab> {
             ),
           );
           await _updateCityFromPosition();
+          await _loadNearbyListings();
         }
       } else {
         bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -274,9 +278,34 @@ class _HomeTabState extends State<_HomeTab> {
         if (!mounted) return;
         setState(() => _currentPosition = position);
         await _updateCityFromPosition();
+        await _loadNearbyListings();
       }
     } catch (_) {
       // Ignorar errores silenciosamente; la UI mostrará "Cerca de ti"
+    }
+  }
+
+  Future<void> _loadNearbyListings() async {
+    if (_currentPosition != null) {
+      debugPrint('Posición actual: $_currentPosition');
+      try {
+        await Provider.of<ListingProvider>(
+          context,
+          listen: false,
+        ).fetchNearbyListings(
+          latitude: _currentPosition!.latitude,
+          longitude: _currentPosition!.longitude,
+          radius: 25,
+        );
+        debugPrint(
+          'Trueques cercanos encontrados: ${Provider.of<ListingProvider>(context, listen: false).nearbyListings.length}',
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error cargando cercanos: $e')));
+      }
     }
   }
 
@@ -325,6 +354,7 @@ class _HomeTabState extends State<_HomeTab> {
             ? 0
             : _featuredIndex % totalFeatured;
 
+        // Volvemos al padding estándar (sin el parche conservador de +100px)
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -440,6 +470,224 @@ class _HomeTabState extends State<_HomeTab> {
                           },
                         ),
                       ),
+              ),
+
+              SizedBox(
+                height: 290, // altura fija, ajusta a lo que necesites
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Cerca de ti',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      child: listingProvider.isLoadingNearby
+                          ? const Center(child: CircularProgressIndicator())
+                          : listingProvider.nearbyListings.isEmpty
+                          ? Center(
+                              child: TextButton.icon(
+                                onPressed: () async {
+                                  await Provider.of<ListingProvider>(
+                                    context,
+                                    listen: false,
+                                  ).fetchNearbyListings(
+                                    latitude: _currentPosition?.latitude ?? 0,
+                                    longitude: _currentPosition?.longitude ?? 0,
+                                    radius: 25,
+                                  );
+                                },
+                                icon: const Icon(Icons.refresh),
+                                label: const Text(
+                                  'Sin resultados cerca de ti. Recargar',
+                                ),
+                              ),
+                            )
+                          : ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: listingProvider.nearbyListings.length,
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(width: 12),
+                              itemBuilder: (context, idx) {
+                                final listing =
+                                    listingProvider.nearbyListings[idx];
+                                final distanceLabel = _formatDistance(listing);
+                                return GestureDetector(
+                                  onTap: () => Navigator.pushNamed(
+                                    context,
+                                    AppRoutes.listingDetail,
+                                    arguments: listing.id,
+                                  ),
+                                  child: SizedBox(
+                                    width: 300,
+                                    child: Card(
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      clipBehavior: Clip.antiAlias,
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          AspectRatio(
+                                            aspectRatio: 16 / 11,
+                                            child: ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(0),
+                                              child: Stack(
+                                                fit: StackFit.expand,
+                                                children: [
+                                                  Image.network(
+                                                    listing.imageUrl,
+                                                    fit: BoxFit.cover,
+                                                    loadingBuilder:
+                                                        (
+                                                          context,
+                                                          child,
+                                                          progress,
+                                                        ) {
+                                                          if (progress == null)
+                                                            return child;
+                                                          return Container(
+                                                            color: Colors
+                                                                .grey[200],
+                                                            child: const Center(
+                                                              child:
+                                                                  CircularProgressIndicator(),
+                                                            ),
+                                                          );
+                                                        },
+                                                    errorBuilder:
+                                                        (
+                                                          context,
+                                                          error,
+                                                          stack,
+                                                        ) => Container(
+                                                          color:
+                                                              Colors.grey[200],
+                                                          child: const Center(
+                                                            child: Icon(
+                                                              Icons
+                                                                  .image_not_supported_outlined,
+                                                              color:
+                                                                  Colors.grey,
+                                                              size: 36,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                  ),
+                                                  Positioned.fill(
+                                                    child: DecoratedBox(
+                                                      decoration: BoxDecoration(
+                                                        gradient: LinearGradient(
+                                                          begin: Alignment
+                                                              .topCenter,
+                                                          end: Alignment
+                                                              .bottomCenter,
+                                                          colors: [
+                                                            Colors.transparent,
+                                                            Colors.black
+                                                                .withOpacity(
+                                                                  0.55,
+                                                                ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  Positioned(
+                                                    left: 12,
+                                                    right: 12,
+                                                    bottom: 12,
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Text(
+                                                          listing.title,
+                                                          maxLines: 2,
+                                                          overflow: TextOverflow
+                                                              .ellipsis,
+                                                          style:
+                                                              const TextStyle(
+                                                                color: Colors
+                                                                    .white,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w700,
+                                                              ),
+                                                        ),
+                                                        const SizedBox(
+                                                          height: 6,
+                                                        ),
+                                                        Row(
+                                                          children: [
+                                                            const Icon(
+                                                              Icons.location_on,
+                                                              size: 14,
+                                                              color: Colors
+                                                                  .white70,
+                                                            ),
+                                                            const SizedBox(
+                                                              width: 6,
+                                                            ),
+                                                            Flexible(
+                                                              child: Text(
+                                                                distanceLabel ??
+                                                                    'Cerca de ti',
+                                                                style: const TextStyle(
+                                                                  color: Colors
+                                                                      .white70,
+                                                                  fontSize: 12,
+                                                                ),
+                                                                overflow:
+                                                                    TextOverflow
+                                                                        .ellipsis,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                          Padding(
+                                            padding: const EdgeInsets.all(12),
+                                            child: Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.monetization_on,
+                                                  size: 18,
+                                                  color: AppColors.primary,
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  '${_formatCoins(listing.trueCoinValue)} coins',
+                                                  style: const TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
               ),
 
               const SizedBox(height: 16),
