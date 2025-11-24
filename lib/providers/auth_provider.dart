@@ -33,7 +33,15 @@ class AuthProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('auth_token', tokenDto.token!);
 
-      user = await _service.getMe();
+      try {
+        user = await _service.getMe();
+      } catch (e) {
+        // If fetching user fails (e.g. token invalid), clear saved token and state
+        ApiClient().clearToken();
+        await prefs.remove('auth_token');
+        user = null;
+        rethrow;
+      }
     } catch (e) {
       rethrow;
     } finally {

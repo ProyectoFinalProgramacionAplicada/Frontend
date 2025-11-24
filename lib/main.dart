@@ -10,6 +10,8 @@ import 'providers/review_provider.dart';
 import 'providers/wallet_provider.dart';
 import 'providers/market_provider.dart';
 import 'providers/settings_provider.dart';
+import 'providers/admin_provider.dart';
+import 'dto/auth/app_role.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,7 +30,7 @@ class TruekApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-      providers: [
+        providers: [
         ChangeNotifierProvider<AuthProvider>.value(value: initialAuthProvider),
         ChangeNotifierProvider(create: (_) => ListingProvider()),
         ChangeNotifierProvider(create: (_) => TradeProvider()),
@@ -36,6 +38,7 @@ class TruekApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => WalletProvider()),
         ChangeNotifierProvider(create: (_) => MarketProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
+          ChangeNotifierProvider(create: (_) => AdminProvider()),
       ],
       child: Sizer(
         builder: (context, orientation, deviceType) {
@@ -46,8 +49,10 @@ class TruekApp extends StatelessWidget {
             darkTheme: AppTheme.darkTheme,
             themeMode: ThemeMode.light,
             initialRoute: initialAuthProvider.isLoggedIn
-                ? AppRoutes.home
-                : AppRoutes.login,
+              ? (initialAuthProvider.currentUser?.role == AppRole.Admin
+                ? AppRoutes.adminActiveUsers
+                : AppRoutes.home)
+              : AppRoutes.login,
             routes: AppRoutes.routes,
           );
         },

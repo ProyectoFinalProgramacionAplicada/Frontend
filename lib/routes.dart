@@ -8,6 +8,8 @@ import 'screens/listing/listing_detail_screen.dart';
 import 'screens/wallet/wallet_screen.dart';
 // Importamos la nueva pantalla de perfil
 import 'screens/profile/profile_screen.dart'; 
+// Admin
+import 'screens/admin/active_users_screen.dart';
 
 class AppRoutes {
   static const String login = '/login';
@@ -21,6 +23,7 @@ class AppRoutes {
   static const String settings = '/settings';
   // Nueva ruta constante
   static const String profile = '/profile'; 
+  static const String adminActiveUsers = '/admin/active-users';
 
   static Map<String, WidgetBuilder> routes = {
     login: (_) => const LoginScreen(),
@@ -33,5 +36,6 @@ class AppRoutes {
     
     // Registramos la pantalla de perfil aquí
     profile: (_) => const ProfileScreen(),
+    adminActiveUsers: (_) => const ActiveUsersScreen(),
   };
 }
