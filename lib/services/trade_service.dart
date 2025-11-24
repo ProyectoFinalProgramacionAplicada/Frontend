@@ -72,4 +72,8 @@ class TradeService {
         data: body,
         options: Options(headers: {"Content-Type": "application/json"}));
   }
+
+  Future<void> completeTrade(int tradeId) async {
+  await _dio.post('/Trades/$tradeId/complete');
+}
 }

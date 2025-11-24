@@ -1,4 +1,3 @@
-// lib/dto/trade/trade_dto.dart
 import 'trade_status.dart';
 
 class TradeDto {
@@ -13,6 +12,10 @@ class TradeDto {
   final double? offeredTrueCoins;
   final double? requestedTrueCoins;
 
+  // Campos nuevos para lógica de roles
+  final int listingOwnerId;
+  final int initiatorUserId;
+
   TradeDto({
     required this.id,
     required this.requesterUserId,
@@ -24,6 +27,8 @@ class TradeDto {
     required this.createdAt,
     this.offeredTrueCoins,
     this.requestedTrueCoins,
+    required this.listingOwnerId,
+    required this.initiatorUserId,
   });
 
   factory TradeDto.fromJson(Map<String, dynamic> json) {
@@ -33,7 +38,10 @@ class TradeDto {
       ownerUserId: json['ownerUserId'],
       targetListingId: json['targetListingId'],
       offeredListingId: json['offeredListingId'],
-      status: TradeStatus.values[json['status']],
+      // Manejo robusto del enum
+      status: json['status'] is int 
+          ? TradeStatus.values[json['status']] 
+          : TradeStatus.values.firstWhere((e) => e.toString() == 'TradeStatus.${json['status']}', orElse: () => TradeStatus.Pending),
       message: json['message'],
       createdAt: DateTime.parse(json['createdAt']),
       offeredTrueCoins: json['offeredTrueCoins'] != null
@@ -42,6 +50,9 @@ class TradeDto {
       requestedTrueCoins: json['requestedTrueCoins'] != null
           ? (json['requestedTrueCoins'] as num).toDouble()
           : null,
+      // Mapeo de los nuevos campos
+      listingOwnerId: json['listingOwnerId'] ?? json['ownerUserId'] ?? 0,
+      initiatorUserId: json['initiatorUserId'] ?? json['requesterUserId'] ?? 0,
     );
   }
 
@@ -56,5 +67,7 @@ class TradeDto {
     'createdAt': createdAt.toIso8601String(),
     'offeredTrueCoins': offeredTrueCoins,
     'requestedTrueCoins': requestedTrueCoins,
+    'listingOwnerId': listingOwnerId,
+    'initiatorUserId': initiatorUserId,
   };
 }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:math' as math;
@@ -15,13 +16,16 @@ class _OptimisticMessage {
 }
 
 class TradeChatScreen extends StatefulWidget {
-  const TradeChatScreen({Key? key}) : super(key: key);
+  const TradeChatScreen({super.key});
 
   @override
   State<TradeChatScreen> createState() => _TradeChatScreenState();
 }
 
 class _TradeChatScreenState extends State<TradeChatScreen> {
+  final TextEditingController _messageController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  Timer? _timer;
   int? _tradeId;
   bool _initialized = false;
   final TextEditingController _controller = TextEditingController();
@@ -88,19 +92,118 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
     super.dispose();
   }
 
+  Future<void> _sendMessage() async {
+    final text = _messageController.text.trim();
+    if (text.isEmpty || _tradeId == null) return;
+
+    _messageController.clear();
+    try {
+      await Provider.of<TradeProvider>(context, listen: false)
+          .sendMessageAndRefresh(_tradeId!, text);
+      
+      // Scroll al fondo
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent + 60, // un poco extra por si acaso
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error al enviar: $e"), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  // --- LÓGICA DE FINALIZAR TRUEQUE ---
+  void _showCompleteConfirmation(BuildContext context, int tradeId) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("¿Finalizar Trueque?"),
+        content: const Text(
+          "Al confirmar:\n"
+          "1. El producto se marcará como VENDIDO.\n"
+          "2. Esta conversación se cerrará.\n"
+          "3. El comprador podrá calificarte.\n\n"
+          "¿Confirmas que el intercambio fue exitoso?"
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Cancelar"),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx); // Cierra diálogo
+              try {
+                await Provider.of<TradeProvider>(context, listen: false)
+                    .completeTrade(tradeId);
+                
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("¡Trueque finalizado con éxito!"),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+                  );
+                }
+              }
+            },
+            child: const Text("Sí, Finalizar", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (_tradeId == null) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final tradeProvider = Provider.of<TradeProvider>(context);
+    final currentUser = authProvider.currentUser;
+
+    if (_tradeId == null || currentUser == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    // Buscamos el Trade actual en la lista del provider para tener el estado REACTIVO
+    // Si no está (raro), usamos null safe
+    final TradeDto? currentTrade = tradeProvider.myTrades.cast<TradeDto?>().firstWhere(
+          (t) => t?.id == _tradeId,
+          orElse: () => null,
+        );
+
+    if (currentTrade == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Chat')),
-        body: const Center(child: Text('Trade ID no válido')),
+        appBar: AppBar(title: const Text("Chat")),
+        body: const Center(child: Text("No se encontró la información del trueque.")),
       );
     }
 
+    // Determinamos roles
+    // ownerUserId = Vendedor (Dueño del producto publicado)
+    // requesterUserId = Comprador (Quien inició el trueque)
+    // NOTA: Usamos los campos nuevos que mapeamos en el DTO para evitar confusión
+    final isSeller = currentUser.id == currentTrade.listingOwnerId; 
+    final isBuyer = currentUser.id == currentTrade.initiatorUserId;
+    
+    final isCompleted = currentTrade.status == TradeStatus.Completed;
+    final isCancelled = currentTrade.status == TradeStatus.Cancelled;
+
     return Scaffold(
-      appBar: AppBar(title: Text('Chat - Trueque #${_tradeId}')),
-      body: SafeArea(
-        child: Column(
+      appBar: AppBar(
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
               child: Consumer<TradeProvider>(
@@ -368,5 +471,10 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
         ),
       ),
     );
+  }
+
+  String _formatTime(DateTime? dt) {
+    if (dt == null) return "";
+    return "${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}";
   }
 }

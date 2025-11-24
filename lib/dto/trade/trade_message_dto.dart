@@ -1,24 +1,25 @@
 // lib/dto/trade/trade_message_dto.dart
-// DTO para mensajes de un Trade (chat de trueque)
-// Estructura mínima definida por petición del equipo.
 
 class TradeMessageDto {
   final int? id;
-  final int? fromUserId;
+  final int? senderUserId;    // Antes fromUserId
+  final String? senderUserName; // NUEVO: Para mostrar el nombre en el chat
   final int? tradeId;
-  final String message;
+  final String? text;         // Antes message
   final DateTime? createdAt;
 
   TradeMessageDto({
     this.id,
-    this.fromUserId,
+    this.senderUserId,
+    this.senderUserName,
     this.tradeId,
-    required this.message,
+    this.text,
     this.createdAt,
   });
 
   factory TradeMessageDto.fromJson(Map<String, dynamic> json) {
-    // Helpers to safely parse ints that might come as int or string or null
+    
+    // Helper para parsear enteros seguros
     int? parseInt(dynamic v) {
       if (v == null) return null;
       if (v is int) return v;
@@ -27,14 +28,7 @@ class TradeMessageDto {
       return null;
     }
 
-    String parseMessage(Map<String, dynamic> j) {
-      if (j['message'] != null) return j['message'].toString();
-      if (j['text'] != null) return j['text'].toString();
-      if (j['body'] != null) return j['body'].toString();
-      // If server returns plain string (unlikely here), fallback to empty
-      return '';
-    }
-
+    // Helper para parsear fechas
     DateTime? parseDate(dynamic v) {
       if (v == null) return null;
       try {
@@ -43,32 +37,32 @@ class TradeMessageDto {
       return null;
     }
 
-    // FromUser could be nested object
-    int? fromUserId = parseInt(json['fromUserId']);
-    if (fromUserId == null && json['fromUser'] != null) {
-      final fu = json['fromUser'];
-      if (fu is Map && fu['id'] != null) fromUserId = parseInt(fu['id']);
-    }
-
     return TradeMessageDto(
       id: parseInt(json['id']),
-      fromUserId: fromUserId,
-      tradeId: parseInt(json['tradeId'] ?? json['tradeId']),
-      message: parseMessage(json),
+      
+      // Mapeamos 'senderUserId' (o fallbacks antiguos 'fromUserId')
+      senderUserId: parseInt(json['senderUserId'] ?? json['fromUserId']),
+      
+      // Mapeamos 'senderUserName' (o fallbacks)
+      senderUserName: json['senderUserName']?.toString() ?? json['senderName']?.toString(),
+      
+      tradeId: parseInt(json['tradeId']),
+      
+      // Mapeamos 'text' (o fallbacks 'message')
+      text: json['text']?.toString() ?? json['message']?.toString() ?? '',
+      
       createdAt: parseDate(json['createdAt'] ?? json['created_at']),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      if (id != null) 'id': id,
-      if (fromUserId != null) 'fromUserId': fromUserId,
-      if (tradeId != null) 'tradeId': tradeId,
-      'message': message,
-      if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
+      'id': id,
+      'senderUserId': senderUserId,
+      'senderUserName': senderUserName,
+      'tradeId': tradeId,
+      'text': text,
+      'createdAt': createdAt?.toIso8601String(),
     };
   }
 }
-
-// Nota: esta implementación es tolerante a campos nulos y variantes comunes
-// de nombres devueltos por el backend (ej. 'text', 'body', 'fromUser').

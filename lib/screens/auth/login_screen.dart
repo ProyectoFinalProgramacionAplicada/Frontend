@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../core/app_export.dart';
 import '../../services/auth_service.dart';
 import '../../providers/auth_provider.dart';
+import '../../dto/auth/app_role.dart';
 import '../../widgets/custom_input.dart';
 import '../../widgets/primary_button.dart';
 
@@ -174,7 +175,12 @@ class _LoginScreenState extends State<LoginScreen>
       // Haptic feedback
       HapticFeedback.lightImpact();
 
-      if (mounted) {
+      if (!mounted) return;
+
+      final role = authProvider.currentUser?.role;
+      if (role == AppRole.Admin) {
+        Navigator.pushReplacementNamed(context, AppRoutes.adminActiveUsers);
+      } else {
         Navigator.pushReplacementNamed(context, AppRoutes.home);
       }
     } catch (e) {
