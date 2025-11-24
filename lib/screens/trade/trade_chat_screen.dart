@@ -1,15 +1,19 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:truekapp/dto/trade/trade_status.dart';
-
-// Imports propios (Ajusta las rutas si es necesario)
-import '../../core/app_export.dart'; // Para AppColors
-import '../../providers/auth_provider.dart';
+import 'dart:math' as math;
+import 'package:intl/intl.dart';
 import '../../providers/trade_provider.dart';
-import '../../widgets/rate_user_dialog.dart'; // El diálogo que creamos antes
-import '../../dto/trade/trade_dto.dart';
-import '../../dto/trade/trade_message_dto.dart';
+import '../../providers/auth_provider.dart';
+import 'package:truekapp/dto/trade/trade_message_dto.dart';
+
+enum _SendStatus { pending, failed }
+
+class _OptimisticMessage {
+  final TradeMessageDto dto;
+  _SendStatus status;
+  _OptimisticMessage({required this.dto, this.status = _SendStatus.pending});
+}
 
 class TradeChatScreen extends StatefulWidget {
   const TradeChatScreen({super.key});
@@ -23,42 +27,67 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
   final ScrollController _scrollController = ScrollController();
   Timer? _timer;
   int? _tradeId;
+  bool _initialized = false;
+  final TextEditingController _controller = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+
+  final List<_OptimisticMessage> _optimisticMessages = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(() {
+      // rebuild to update send button enabled/disabled state
+      if (mounted) setState(() {});
+    });
+  }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Obtenemos el ID del argumento de la ruta
-    final args = ModalRoute.of(context)?.settings.arguments;
-    if (args is int && _tradeId == null) {
-      _tradeId = args;
-      _initData();
+    if (!_initialized) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is int) {
+        _tradeId = args;
+        // Fetch messages for this trade
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Provider.of<TradeProvider>(context, listen: false)
+              .fetchMessages(_tradeId!)
+              .then((_) => _scrollToBottom())
+              .catchError((_) {});
+        });
+      }
+      _initialized = true;
     }
   }
 
-  void _initData() {
-    if (_tradeId == null) return;
-    
-    // Carga inicial
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fetchMessages();
-    });
-
-    // Polling: Actualizar mensajes cada 5 segundos (opcional, idealmente usar SignalR)
-    _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
-      if (mounted) _fetchMessages();
-    });
+  void _scrollToBottom() {
+    if (!mounted) return;
+    if (!_scrollController.hasClients) return;
+    try {
+      final pos = _scrollController.position.maxScrollExtent;
+      _scrollController.animateTo(pos,
+          duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
+    } catch (_) {
+      // ignore scroll errors
+    }
   }
 
-  Future<void> _fetchMessages() async {
-    if (_tradeId == null) return;
-    await Provider.of<TradeProvider>(context, listen: false)
-        .fetchMessages(_tradeId!);
+  Color _bubbleColor(BuildContext context, bool isMe) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    if (isMe) return isDark ? const Color(0xFF0B8440) : const Color(0xFFD2F8C6);
+    return isDark ? Colors.grey.shade800 : Colors.grey.shade200;
+  }
+
+  Color _bubbleTextColor(BuildContext context, bool isMe) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    if (isMe) return isDark ? Colors.white : const Color(0xFF0F1720);
+    return isDark ? Colors.white70 : Colors.black87;
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
-    _messageController.dispose();
+    _controller.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -176,211 +205,268 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(isSeller ? "Mi Venta" : "Mi Compra", style: const TextStyle(fontSize: 16)),
-            Text(
-              isCompleted ? "Finalizado" : (isCancelled ? "Cancelado" : "En proceso"),
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w300),
-            ),
-          ],
-        ),
-        actions: [
-          // --- BOTÓN PARA EL VENDEDOR: FINALIZAR ---
-          // Solo aparece si soy el vendedor y NO está terminado ni cancelado
-          if (isSeller && !isCompleted && !isCancelled)
-            IconButton(
-              icon: const Icon(Icons.check_circle_outline, size: 28),
-              color: Colors.green,
-              tooltip: "Marcar como Finalizado",
-              onPressed: () => _showCompleteConfirmation(context, currentTrade.id),
-            ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // --- BANNER DE ESTADO (SI ESTÁ COMPLETADO) ---
-          if (isCompleted)
-            Container(
-              width: double.infinity,
-              color: Colors.green.shade50,
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      Icon(Icons.verified, color: Colors.green),
-                      SizedBox(width: 8),
-                      Text(
-                        "¡Trueque Completado!",
-                        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 16),
-                      ),
-                    ],
-                  ),
-                  
-                  // Botón para el Comprador: Calificar
-                  if (isBuyer) ...[
-                    const SizedBox(height: 8),
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.star_rate_rounded, color: Colors.white),
-                      label: const Text("Calificar Vendedor"),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.amber,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                      ),
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (_) => RateUserDialog(
-                            toUserId: currentTrade.listingOwnerId,
-                            tradeId: currentTrade.id,
-                            userName: "Vendedor", // Podrías pasar el nombre real si lo agregas al DTO
-                          ),
-                        );
-                      },
-                    ),
-                  ] else ...[
-                     const SizedBox(height: 4),
-                     const Text("Gracias por usar TruekApp.", style: TextStyle(fontSize: 12, color: Colors.grey))
-                  ]
-                ],
-              ),
-            ),
-          
-          // --- BANNER DE CANCELADO ---
-          if (isCancelled)
-             Container(
-              width: double.infinity,
-              color: Colors.red.shade50,
-              padding: const EdgeInsets.all(12),
-              child: const Center(child: Text("Este trueque ha sido cancelado.", style: TextStyle(color: Colors.red))),
-             ),
+            Expanded(
+              child: Consumer<TradeProvider>(
+                builder: (context, provider, child) {
+                  if (provider.isLoadingMessages) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-          // --- LISTA DE MENSAJES ---
-          Expanded(
-            child: Consumer<TradeProvider>(
-              builder: (context, provider, child) {
-                final messages = provider.getMessagesForTrade(_tradeId!);
-                
-                if (provider.isLoadingMessages && messages.isEmpty) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+                  final error = provider.messagesError;
+                  if (error != null) {
+                    return Center(child: Text('Error: $error'));
+                  }
 
-                if (messages.isEmpty) {
-                  return Center(
-                    child: Text(
-                      "Inicia la conversación...",
-                      style: TextStyle(color: Colors.grey[400]),
-                    ),
+                  final messages = List<TradeMessageDto>.from(provider.getMessagesForTrade(_tradeId!));
+
+                  if (messages.isEmpty && _optimisticMessages.isEmpty) {
+                    return const Center(
+                        child: Text(
+                      'Todavía no hay mensajes en este trueque. Envía el primero ✨',
+                      textAlign: TextAlign.center,
+                    ));
+                  }
+
+                  // Combine provider messages with optimistic local messages
+                  final combined = List<TradeMessageDto>.from(messages);
+                  for (final om in _optimisticMessages) {
+                    final exists = messages.any((m) => m.message == om.dto.message && m.fromUserId == om.dto.fromUserId && m.createdAt == om.dto.createdAt);
+                    if (!exists) combined.add(om.dto);
+                  }
+
+                  // Ensure chronological order (older first)
+                  combined.sort((a, b) {
+                    final ta = a.createdAt ?? DateTime(1970);
+                    final tb = b.createdAt ?? DateTime(1970);
+                    return ta.compareTo(tb);
+                  });
+
+                  return ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(12),
+                    itemCount: combined.length,
+                    itemBuilder: (context, index) {
+                      final msg = combined[index];
+                      final time = msg.createdAt != null
+                          ? DateFormat.Hm().format(msg.createdAt!)
+                          : '';
+                      final currentUserId = Provider.of<AuthProvider>(context, listen: false).user?.id;
+                      final isMe = currentUserId != null && msg.fromUserId != null && currentUserId == msg.fromUserId;
+
+                      // Determine if this message corresponds to an optimistic entry
+                      _OptimisticMessage? opt;
+                      try {
+                        opt = _optimisticMessages.firstWhere((o) =>
+                            o.dto.message == msg.message &&
+                            o.dto.fromUserId == msg.fromUserId &&
+                            o.dto.createdAt == msg.createdAt);
+                      } catch (_) {
+                        opt = null;
+                      }
+
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Row(
+                          mainAxisAlignment:
+                              isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+                          children: [
+                            ConstrainedBox(
+                              constraints: BoxConstraints(
+                                  maxWidth: MediaQuery.of(context).size.width * 0.72),
+                              child: Column(
+                                crossAxisAlignment: isMe
+                                    ? CrossAxisAlignment.end
+                                    : CrossAxisAlignment.start,
+                                children: [
+                                  // Bubble with tail drawn as a rotated square
+                                  Stack(
+                                    clipBehavior: Clip.none,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+                                        decoration: BoxDecoration(
+                                          color: _bubbleColor(context, isMe),
+                                          borderRadius: isMe
+                                              ? const BorderRadius.only(
+                                                  topLeft: Radius.circular(16),
+                                                  topRight: Radius.circular(16),
+                                                  bottomLeft: Radius.circular(16),
+                                                  bottomRight: Radius.circular(4),
+                                                )
+                                              : const BorderRadius.only(
+                                                  topLeft: Radius.circular(16),
+                                                  topRight: Radius.circular(16),
+                                                  bottomLeft: Radius.circular(4),
+                                                  bottomRight: Radius.circular(16),
+                                                ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(0.05),
+                                              offset: const Offset(0, 1),
+                                              blurRadius: 2,
+                                            )
+                                          ],
+                                        ),
+                                        child: Text(
+                                          msg.message ?? '',
+                                          style: TextStyle(
+                                              color: _bubbleTextColor(context, isMe)),
+                                        ),
+                                      ),
+                                      // tail
+                                      Positioned(
+                                        bottom: -6,
+                                        right: isMe ? -6 : null,
+                                        left: isMe ? null : -6,
+                                        child: Transform.rotate(
+                                          angle: math.pi / 4,
+                                          child: Container(
+                                            width: 12,
+                                            height: 12,
+                                            decoration: BoxDecoration(
+                                              color: _bubbleColor(context, isMe),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Padding(
+                                        padding: EdgeInsets.only(
+                                            left: isMe ? 0 : 6,
+                                            right: isMe ? 6 : 0),
+                                        child: Text(
+                                          time,
+                                          style: TextStyle(
+                                              fontSize: 11,
+                                              color: Colors.grey[600]),
+                                        ),
+                                      ),
+                                      if (opt != null && opt.status == _SendStatus.pending) ...[
+                                        const SizedBox(width: 6),
+                                        const SizedBox(
+                                            width: 14,
+                                            height: 14,
+                                            child: CircularProgressIndicator(strokeWidth: 2)),
+                                      ] else if (opt != null && opt.status == _SendStatus.failed) ...[
+                                        const SizedBox(width: 6),
+                                        GestureDetector(
+                                          onTap: () async {
+                                            // retry
+                                            setState(() => opt!.status = _SendStatus.pending);
+                                            try {
+                                              await provider.sendMessageAndRefresh(_tradeId!, opt!.dto.message);
+                                              setState(() {
+                                                _optimisticMessages.removeWhere((m) => m.dto.createdAt == opt!.dto.createdAt && m.dto.message == opt!.dto.message);
+                                              });
+                                              WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+                                            } catch (_) {
+                                              setState(() => opt!.status = _SendStatus.failed);
+                                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error reenviando mensaje'), backgroundColor: Colors.red));
+                                            }
+                                          },
+                                          child: const Icon(Icons.error, size: 14, color: Colors.red),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   );
-                }
-
-                return ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.all(16),
-                  itemCount: messages.length,
-                  itemBuilder: (context, index) {
-                    final msg = messages[index];
-                    final bool isMe = msg.senderUserId == currentUser.id;
-                    return _buildMessageBubble(msg, isMe);
-                  },
-                );
-              },
-            ),
-          ),
-
-          // --- INPUT DE MENSAJES ---
-          // Solo habilitado si el trade NO está finalizado ni cancelado
-          if (!isCompleted && !isCancelled)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    offset: const Offset(0, -2),
-                    blurRadius: 5,
-                  )
-                ],
+                },
               ),
-              child: SafeArea(
+            ),
+            const Divider(height: 1),
+            Consumer<TradeProvider>(builder: (context, provider, child) {
+              final isPending = _tradeId != null && provider.isSendPendingFor(_tradeId!);
+              final canSend = _controller.text.trim().isNotEmpty && !isPending;
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 child: Row(
                   children: [
                     Expanded(
                       child: TextField(
-                        controller: _messageController,
-                        decoration: InputDecoration(
-                          hintText: "Escribe un mensaje...",
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(24),
-                            borderSide: BorderSide.none,
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey[100],
+                        controller: _controller,
+                        decoration: const InputDecoration(
+                          hintText: 'Escribe un mensaje...',
                         ),
-                        textCapitalization: TextCapitalization.sentences,
+                        textInputAction: TextInputAction.send,
+                        onSubmitted: (_) async {
+                          if (canSend && _tradeId != null) {
+                            final text = _controller.text.trim();
+                            if (text.isEmpty) return;
+                            final currentUserId = Provider.of<AuthProvider>(context, listen: false).user?.id;
+                            final temp = TradeMessageDto(
+                                id: null,
+                                fromUserId: currentUserId,
+                                tradeId: _tradeId,
+                                message: text,
+                                createdAt: DateTime.now());
+                            setState(() => _optimisticMessages.add(_OptimisticMessage(dto: temp)));
+                            try {
+                              await provider.sendMessageAndRefresh(_tradeId!, text);
+                              _controller.clear();
+                              // remove optimistic instance that matches
+                              setState(() {
+                                _optimisticMessages.removeWhere((m) => m.dto.createdAt == temp.createdAt && m.dto.message == temp.message);
+                              });
+                              WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                content: Text('Error enviando mensaje: $e'),
+                                backgroundColor: Colors.red,
+                              ));
+                            }
+                          }
+                        },
                       ),
                     ),
                     const SizedBox(width: 8),
-                    CircleAvatar(
-                      backgroundColor: AppColors.primary,
-                      child: IconButton(
-                        icon: const Icon(Icons.send, color: Colors.white, size: 20),
-                        onPressed: _sendMessage,
-                      ),
+                    ElevatedButton(
+                      onPressed: canSend
+                            ? () async {
+                                final text = _controller.text.trim();
+                                if (text.isEmpty || _tradeId == null) return;
+                                final currentUserId = Provider.of<AuthProvider>(context, listen: false).user?.id;
+                                final temp = TradeMessageDto(
+                                    id: null,
+                                    fromUserId: currentUserId,
+                                    tradeId: _tradeId,
+                                    message: text,
+                                    createdAt: DateTime.now());
+                                setState(() => _optimisticMessages.add(_OptimisticMessage(dto: temp)));
+                                try {
+                                  await provider.sendMessageAndRefresh(_tradeId!, text);
+                                  _controller.clear();
+                                  setState(() {
+                                    _optimisticMessages.removeWhere((m) => m.dto.createdAt == temp.createdAt && m.dto.message == temp.message);
+                                  });
+                                  WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+                                } catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                    content: Text('Error enviando mensaje: $e'),
+                                    backgroundColor: Colors.red,
+                                  ));
+                                }
+                              }
+                            : null,
+                      child: isPending
+                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Text('Enviar'),
                     ),
                   ],
                 ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMessageBubble(TradeMessageDto msg, bool isMe) {
-    return Align(
-      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        constraints: BoxConstraints(maxWidth: 70.w), // Usando sizer
-        decoration: BoxDecoration(
-          color: isMe ? AppColors.primary : Colors.grey[200],
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(16),
-            topRight: const Radius.circular(16),
-            bottomLeft: isMe ? const Radius.circular(16) : Radius.zero,
-            bottomRight: isMe ? Radius.zero : const Radius.circular(16),
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (!isMe) ...[
-               Text(
-                msg.senderUserName ?? "Usuario",
-                style: TextStyle(fontSize: 10, color: Colors.grey[600], fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 2),
-            ],
-            Text(
-              msg.text ?? "",
-              style: TextStyle(
-                color: isMe ? Colors.white : Colors.black87,
-                fontSize: 15,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _formatTime(msg.createdAt),
-              style: TextStyle(
-                fontSize: 10,
-                color: isMe ? Colors.white70 : Colors.black45,
-              ),
-            ),
+              );
+            }),
           ],
         ),
       ),

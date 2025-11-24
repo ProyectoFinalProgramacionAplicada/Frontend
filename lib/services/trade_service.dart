@@ -36,10 +36,29 @@ class TradeService {
   Future<List<TradeMessageDto>> getMessages(int tradeId) async {
     try {
       final response = await _dio.get('/Trades/$tradeId/messages');
-      final data = response.data as List;
-      return data
-          .map((e) => TradeMessageDto.fromJson(e as Map<String, dynamic>))
-          .toList();
+      final data = response.data;
+
+      // The backend should return a JSON array, but different wrappers are
+      // possible (single object, object with 'data' or 'items', etc.). Be
+      // tolerant and normalize to a List<Map> when possible.
+      List<Map<String, dynamic>> normalize(dynamic raw) {
+        if (raw == null) return [];
+        if (raw is List) {
+          return raw.map((e) => e as Map<String, dynamic>).toList();
+        }
+        if (raw is Map<String, dynamic>) {
+          // Common wrappers
+          if (raw['data'] is List) return (raw['data'] as List).map((e) => e as Map<String, dynamic>).toList();
+          if (raw['items'] is List) return (raw['items'] as List).map((e) => e as Map<String, dynamic>).toList();
+          if (raw['messages'] is List) return (raw['messages'] as List).map((e) => e as Map<String, dynamic>).toList();
+          // If it's a single object representing a message, return single-element list
+          return [raw];
+        }
+        return [];
+      }
+
+      final list = normalize(data);
+      return list.map((e) => TradeMessageDto.fromJson(e)).toList();
     } catch (e) {
       throw Exception('Error obteniendo mensajes del trade $tradeId: $e');
     }

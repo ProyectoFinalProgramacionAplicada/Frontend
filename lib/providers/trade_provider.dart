@@ -97,19 +97,32 @@ class TradeProvider extends ChangeNotifier {
     notifyListeners();
     try {
       final messages = await _service.getMessages(tradeId);
-      final seen = <String>{};
+      debugPrint('TradeProvider.fetchMessages: tradeId=$tradeId rawMessages=${messages.length}');
+      // Sort messages chronologically (oldest first)
+      messages.sort((a, b) {
+        final ta = a.createdAt ?? DateTime(1970);
+        final tb = b.createdAt ?? DateTime(1970);
+        return ta.compareTo(tb);
+      });
+
+      // Dedupe only by numeric id when present. If the backend doesn't return
+      // ids for some messages, keep them all (avoid collapsing different
+      // messages that may have null timestamps or identical text).
+      final seenIds = <int>{};
       final deduped = <TradeMessageDto>[];
       
       for (final m in messages) {
-        // --- CORRECCIÓN AQUÍ: Usamos m.text en lugar de m.message ---
-        final key = (m.id != null) ? 'id:${m.id}' : 'm:${m.text}|t:${m.createdAt}';
-        
-        if (!seen.contains(key)) {
-          seen.add(key);
+        if (m.id != null) {
+          if (seenIds.contains(m.id)) continue;
+          seenIds.add(m.id!);
+          deduped.add(m);
+        } else {
+          // No id: include as-is
           deduped.add(m);
         }
       }
       _messagesByTrade[tradeId] = deduped;
+      debugPrint('TradeProvider.fetchMessages: tradeId=$tradeId deduped=${deduped.length}');
     } catch (e) {
       _messagesError = e.toString();
     } finally {
