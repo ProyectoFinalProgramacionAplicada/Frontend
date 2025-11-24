@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
@@ -60,10 +59,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
         });
         setState(() {});
         final msg = e.message ?? e.toString();
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(msg)));
       } else {
         final msg = e.toString().replaceAll('Exception: ', '');
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(msg)));
 
         // If the server reports the email is already registered, offer to go to login
         final lower = msg.toLowerCase();
@@ -75,7 +78,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
               context: context,
               builder: (ctx) => AlertDialog(
                 title: const Text('Cuenta existente'),
-                content: Text('$msg\n\n¿Deseas ir a Iniciar sesión en su lugar?'),
+                content: Text(
+                  '$msg\n\n¿Deseas ir a Iniciar sesión en su lugar?',
+                ),
                 actions: [
                   TextButton(
                     onPressed: () {
@@ -135,9 +140,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         controller: _emailController,
                         decoration: const InputDecoration(labelText: 'Email'),
                         validator: (v) {
-                          if (v == null || v.isEmpty) return 'El email es requerido';
+                          if (v == null || v.isEmpty)
+                            return 'El email es requerido';
                           final re = RegExp(r'^[A-Za-z0-9._%+-]+@gmail\.com$');
-                          if (!re.hasMatch(v)) return 'Email debe ser @gmail.com';
+                          if (!re.hasMatch(v))
+                            return 'Email debe ser @gmail.com';
                           return null;
                         },
                       ),
@@ -148,7 +155,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             alignment: Alignment.centerLeft,
                             child: Text(
                               _fieldErrors['email']!,
-                              style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12),
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.error,
+                                fontSize: 12,
+                              ),
                             ),
                           ),
                         ),
@@ -158,11 +168,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       // Phone
                       TextFormField(
                         controller: _phoneController,
-                        decoration: const InputDecoration(labelText: 'Teléfono (ej: +59177310481)'),
+                        decoration: const InputDecoration(
+                          labelText: 'Teléfono (ej: +59177310481)',
+                        ),
                         validator: (v) {
-                          if (v == null || v.isEmpty) return null; // phone optional per schema
+                          if (v == null || v.isEmpty)
+                            return null; // phone optional per schema
                           final re = RegExp(r'^\+[1-9]\d{6,14}$');
-                          if (!re.hasMatch(v)) return 'Teléfono inválido. Formato +591...';
+                          if (!re.hasMatch(v))
+                            return 'Teléfono inválido. Formato +591...';
                           return null;
                         },
                       ),
@@ -173,7 +187,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             alignment: Alignment.centerLeft,
                             child: Text(
                               _fieldErrors['phone']!,
-                              style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12),
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.error,
+                                fontSize: 12,
+                              ),
                             ),
                           ),
                         ),
@@ -187,7 +204,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         decoration: const InputDecoration(
                           labelText: 'Contraseña',
                         ),
-                        validator: (v) => (v == null || v.length < 6) ? 'Mínimo 6 caracteres' : null,
+                        validator: (v) => (v == null || v.length < 6)
+                            ? 'Mínimo 6 caracteres'
+                            : null,
                       ),
                       if (_fieldErrors['password'] != null)
                         Padding(
@@ -196,7 +215,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             alignment: Alignment.centerLeft,
                             child: Text(
                               _fieldErrors['password']!,
-                              style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12),
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.error,
+                                fontSize: 12,
+                              ),
                             ),
                           ),
                         ),
@@ -204,7 +226,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       const SizedBox(height: 16),
                       _isLoading
                           ? const CircularProgressIndicator()
-                          : ElevatedButton(onPressed: _handleRegister, child: const Text('Crear cuenta')),
+                          : ElevatedButton(
+                              onPressed: _handleRegister,
+                              child: const Text('Crear cuenta'),
+                            ),
 
                       const SizedBox(height: 12),
                       Row(
@@ -212,10 +237,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         children: [
                           const Text('¿Ya tenés cuenta? '),
                           GestureDetector(
-                            onTap: () => Navigator.pushReplacementNamed(context, AppRoutes.login),
+                            onTap: () => Navigator.pushReplacementNamed(
+                              context,
+                              AppRoutes.login,
+                            ),
                             child: Text(
                               'Iniciar sesión',
-                              style: TextStyle(color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                color: Theme.of(context).primaryColor,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ],

@@ -551,8 +551,10 @@ class _HomeTabState extends State<_HomeTab> {
                                                           child,
                                                           progress,
                                                         ) {
-                                                          if (progress == null)
+                                                          if (progress ==
+                                                              null) {
                                                             return child;
+                                                          }
                                                           return Container(
                                                             color: Colors
                                                                 .grey[200],
@@ -1310,8 +1312,10 @@ class _MessagesTabState extends State<_MessagesTab> {
   TradeFilter _filter = TradeFilter.All;
 
   // Helper predicates
-  bool _isBuying(int currentUserId, TradeDto t) => t.requesterUserId == currentUserId;
-  bool _isSelling(int currentUserId, TradeDto t) => t.ownerUserId == currentUserId;
+  bool _isBuying(int currentUserId, TradeDto t) =>
+      t.requesterUserId == currentUserId;
+  bool _isSelling(int currentUserId, TradeDto t) =>
+      t.ownerUserId == currentUserId;
 
   // --- Helpers para mostrar el estado del Trueque ---
 
@@ -1410,21 +1414,33 @@ class _MessagesTabState extends State<_MessagesTab> {
                   Widget roleChip() {
                     if (isBuying) {
                       return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.green.shade100,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Text('Comprando', style: TextStyle(color: Colors.green)),
+                        child: const Text(
+                          'Comprando',
+                          style: TextStyle(color: Colors.green),
+                        ),
                       );
                     } else if (isSelling) {
                       return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.orange.shade100,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Text('Vendiendo', style: TextStyle(color: Colors.orange)),
+                        child: const Text(
+                          'Vendiendo',
+                          style: TextStyle(color: Colors.orange),
+                        ),
                       );
                     }
                     return const SizedBox.shrink();
@@ -1439,7 +1455,10 @@ class _MessagesTabState extends State<_MessagesTab> {
                   return ListTile(
                     leading: CircleAvatar(
                       backgroundColor: Colors.grey[300],
-                      child: const Icon(Icons.person_outline, color: Colors.white),
+                      child: const Icon(
+                        Icons.person_outline,
+                        color: Colors.white,
+                      ),
                     ),
                     title: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1450,30 +1469,54 @@ class _MessagesTabState extends State<_MessagesTab> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: FutureBuilder<String?>(
-                                future: tradeProvider.fetchListingTitle(trade.targetListingId),
-                                initialData: tradeProvider.getCachedListingTitle(trade.targetListingId),
+                                future: tradeProvider.fetchListingTitle(
+                                  trade.targetListingId,
+                                ),
+                                initialData: tradeProvider
+                                    .getCachedListingTitle(
+                                      trade.targetListingId,
+                                    ),
                                 builder: (context, snapshot) {
-                                  final title = snapshot.data ?? 'Trueque #${trade.id}';
-                                  return Text(title, style: const TextStyle(fontWeight: FontWeight.w700));
+                                  final title =
+                                      snapshot.data ?? 'Trueque #${trade.id}';
+                                  return Text(
+                                    title,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  );
                                 },
                               ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 4),
-                        Text(roleSubtitle(), style: const TextStyle(color: Colors.grey)),
+                        Text(
+                          roleSubtitle(),
+                          style: const TextStyle(color: Colors.grey),
+                        ),
                       ],
                     ),
                     trailing: Chip(
                       label: Text(
                         _getStatusText(trade.status),
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       backgroundColor: _getStatusColor(trade.status),
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 0,
+                      ),
                     ),
                     onTap: () {
-                      Navigator.pushNamed(context, AppRoutes.tradeChat, arguments: trade.id);
+                      Navigator.pushNamed(
+                        context,
+                        AppRoutes.tradeChat,
+                        arguments: trade.id,
+                      );
                     },
                   );
                 },
@@ -1495,15 +1538,25 @@ extension on _MessagesTabState {
     return Expanded(
       child: OutlinedButton(
         style: OutlinedButton.styleFrom(
-          backgroundColor: selected ? AppColors.primary.withOpacity(0.08) : null,
-          side: BorderSide(color: selected ? AppColors.primary : Colors.grey.shade300),
+          backgroundColor: selected
+              ? AppColors.primary.withOpacity(0.08)
+              : null,
+          side: BorderSide(
+            color: selected ? AppColors.primary : Colors.grey.shade300,
+          ),
         ),
         onPressed: () => setState(() => _filter = f),
-        child: Text(label, style: TextStyle(color: selected ? AppColors.primary : Colors.black87)),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? AppColors.primary : Colors.black87,
+          ),
+        ),
       ),
     );
   }
 }
+
 class _WalletTab extends StatefulWidget {
   @override
   State<_WalletTab> createState() => _WalletTabState();

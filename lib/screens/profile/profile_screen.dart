@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart'; // Asegúrate de tener esta dependencia
 import 'package:provider/provider.dart';
 import '../../core/app_export.dart';
@@ -21,10 +20,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    final userId = Provider.of<AuthProvider>(context, listen: false).currentUser?.id;
+    final userId = Provider.of<AuthProvider>(
+      context,
+      listen: false,
+    ).currentUser?.id;
     if (userId != null) {
-      _myListingsFuture = Provider.of<ListingProvider>(context, listen: false)
-          .getListingsByOwner(userId);
+      _myListingsFuture = Provider.of<ListingProvider>(
+        context,
+        listen: false,
+      ).getListingsByOwner(userId);
     } else {
       _myListingsFuture = Future.value([]);
     }
@@ -42,23 +46,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final fileName = image.name;
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Subiendo imagen...")));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Subiendo imagen...")));
 
-      await Provider.of<AuthProvider>(context, listen: false)
-          .updateAvatar(bytes, fileName);
+      await Provider.of<AuthProvider>(
+        context,
+        listen: false,
+      ).updateAvatar(bytes, fileName);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("¡Foto actualizada!"), backgroundColor: Colors.green)
+        const SnackBar(
+          content: Text("¡Foto actualizada!"),
+          backgroundColor: Colors.green,
+        ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red)
+        SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
       );
     }
   }
 
   // 2. Editar Datos Básicos
-  void _showEditProfileDialog(BuildContext context, String? currentName, String? currentPhone) {
+  void _showEditProfileDialog(
+    BuildContext context,
+    String? currentName,
+    String? currentPhone,
+  ) {
     final nameController = TextEditingController(text: currentName);
     final phoneController = TextEditingController(text: currentPhone);
 
@@ -82,23 +97,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancelar")),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Cancelar"),
+          ),
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(ctx);
               try {
-                await Provider.of<AuthProvider>(context, listen: false).updateProfile(
+                await Provider.of<AuthProvider>(
+                  context,
+                  listen: false,
+                ).updateProfile(
                   UserUpdateDto(
                     displayName: nameController.text.trim(),
                     phone: phoneController.text.trim(),
                   ),
                 );
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Perfil actualizado"), backgroundColor: Colors.green)
+                  const SnackBar(
+                    content: Text("Perfil actualizado"),
+                    backgroundColor: Colors.green,
+                  ),
                 );
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red)
+                  SnackBar(
+                    content: Text("Error: $e"),
+                    backgroundColor: Colors.red,
+                  ),
                 );
               }
             },
@@ -135,21 +162,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancelar")),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Cancelar"),
+          ),
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(ctx);
               try {
-                await Provider.of<AuthProvider>(context, listen: false).changePassword(
+                await Provider.of<AuthProvider>(
+                  context,
+                  listen: false,
+                ).changePassword(
                   oldPassController.text,
                   newPassController.text,
                 );
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Contraseña actualizada exitosamente"), backgroundColor: Colors.green)
+                  const SnackBar(
+                    content: Text("Contraseña actualizada exitosamente"),
+                    backgroundColor: Colors.green,
+                  ),
                 );
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red)
+                  SnackBar(
+                    content: Text("Error: $e"),
+                    backgroundColor: Colors.red,
+                  ),
                 );
               }
             },
@@ -165,7 +204,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.currentUser;
 
-    if (user == null) return const Scaffold(body: Center(child: Text("Sin sesión")));
+    if (user == null)
+      return const Scaffold(body: Center(child: Text("Sin sesión")));
 
     final fullAvatarUrl = user.avatarUrl != null
         ? '${AppConstants.apiBaseUrl}${user.avatarUrl}'
@@ -179,7 +219,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           IconButton(
             icon: const Icon(Icons.edit),
             tooltip: "Editar Datos",
-            onPressed: () => _showEditProfileDialog(context, user.displayName, user.phone),
+            onPressed: () =>
+                _showEditProfileDialog(context, user.displayName, user.phone),
           ),
           // Botón Logout
           IconButton(
@@ -187,7 +228,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             tooltip: "Cerrar Sesión",
             onPressed: () {
               authProvider.logout();
-              Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                AppRoutes.login,
+                (route) => false,
+              );
             },
           ),
         ],
@@ -197,7 +242,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           children: [
             const SizedBox(height: 20),
-            
+
             // --- SECCIÓN 1: AVATAR Y NOMBRE ---
             Center(
               child: Stack(
@@ -208,9 +253,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: CircleAvatar(
                       radius: 60,
                       backgroundColor: AppColors.primary.withOpacity(0.1),
-                      backgroundImage: fullAvatarUrl != null ? NetworkImage(fullAvatarUrl) : null,
-                      child: fullAvatarUrl == null 
-                          ? Icon(Icons.person, size: 60, color: AppColors.primary)
+                      backgroundImage: fullAvatarUrl != null
+                          ? NetworkImage(fullAvatarUrl)
+                          : null,
+                      child: fullAvatarUrl == null
+                          ? Icon(
+                              Icons.person,
+                              size: 60,
+                              color: AppColors.primary,
+                            )
                           : null,
                     ),
                   ),
@@ -223,24 +274,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       decoration: const BoxDecoration(
                         color: Colors.white,
                         shape: BoxShape.circle,
-                        boxShadow: [BoxShadow(blurRadius: 3, color: Colors.black26)]
+                        boxShadow: [
+                          BoxShadow(blurRadius: 3, color: Colors.black26),
+                        ],
                       ),
-                      child: Icon(Icons.camera_alt, size: 20, color: AppColors.primary),
+                      child: Icon(
+                        Icons.camera_alt,
+                        size: 20,
+                        color: AppColors.primary,
+                      ),
                     ),
-                  )
+                  ),
                 ],
               ),
             ),
             const SizedBox(height: 16),
-            
+
             Text(
               user.displayName ?? "Sin Nombre",
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             Text(user.email ?? "", style: TextStyle(color: Colors.grey[600])),
             if (user.phone != null && user.phone!.isNotEmpty)
               Text(user.phone!, style: TextStyle(color: Colors.grey[600])),
-            
+
             // Botón Cambiar Contraseña
             TextButton.icon(
               onPressed: () => _showChangePasswordDialog(context),
@@ -256,13 +315,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
+                  colors: [
+                    AppColors.primary,
+                    AppColors.primary.withOpacity(0.8),
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
-                  BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 5))
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
+                  ),
                 ],
               ),
               child: Row(
@@ -273,19 +339,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     children: [
                       Text("Balance", style: TextStyle(color: Colors.white70)),
                       SizedBox(height: 4),
-                      Icon(Icons.account_balance_wallet, color: Colors.white, size: 28),
+                      Icon(
+                        Icons.account_balance_wallet,
+                        color: Colors.white,
+                        size: 28,
+                      ),
                     ],
                   ),
                   Text(
                     "${user.trueCoinBalance.toStringAsFixed(2)} TC",
-                    style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
             ),
 
             const SizedBox(height: 30),
-            
+
             // --- SECCIÓN 3: MIS PRODUCTOS ---
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -293,7 +367,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   "Mis Publicaciones",
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
@@ -304,14 +380,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
               future: _myListingsFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Padding(padding: EdgeInsets.all(20), child: Center(child: CircularProgressIndicator()));
+                  return const Padding(
+                    padding: EdgeInsets.all(20),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
                 }
-                
+
                 final listings = snapshot.data ?? [];
                 if (listings.isEmpty) {
                   return Container(
                     padding: const EdgeInsets.all(30),
-                    child: const Text("No tienes productos activos.", style: TextStyle(color: Colors.grey)),
+                    child: const Text(
+                      "No tienes productos activos.",
+                      style: TextStyle(color: Colors.grey),
+                    ),
                   );
                 }
 
@@ -329,11 +411,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   itemBuilder: (context, index) {
                     final item = listings[index];
                     return GestureDetector(
-                      onTap: () => Navigator.pushNamed(context, AppRoutes.listingDetail, arguments: item.id),
+                      onTap: () => Navigator.pushNamed(
+                        context,
+                        AppRoutes.listingDetail,
+                        arguments: item.id,
+                      ),
                       child: Card(
                         elevation: 2,
                         clipBehavior: Clip.antiAlias,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -342,7 +430,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 item.imageUrl,
                                 fit: BoxFit.cover,
                                 width: double.infinity,
-                                errorBuilder: (_,__,___) => Container(color: Colors.grey[200]),
+                                errorBuilder: (_, __, ___) =>
+                                    Container(color: Colors.grey[200]),
                               ),
                             ),
                             Padding(
@@ -350,8 +439,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold)),
-                                  Text("${item.trueCoinValue} TC", style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12)),
+                                  Text(
+                                    item.title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Text(
+                                    "${item.trueCoinValue} TC",
+                                    style: TextStyle(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),

@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/app_export.dart'; // Importa tus constantes/colores
 import '../dto/review/user_review_create_dto.dart';
@@ -38,7 +37,7 @@ class _RateUserDialogState extends State<RateUserDialog> {
 
     try {
       final provider = Provider.of<ReviewProvider>(context, listen: false);
-      
+
       final dto = UserReviewCreateDto(
         toUserId: widget.toUserId,
         tradeId: widget.tradeId,
@@ -51,10 +50,10 @@ class _RateUserDialogState extends State<RateUserDialog> {
       if (mounted) {
         Navigator.pop(context, true); // Retorna true al cerrar si tuvo éxito
         ScaffoldMessenger.of(context).showSnackBar(
-           SnackBar(
-             content: Text("¡Calificación enviada!"),
-             backgroundColor: AppColors.successColor,
-           ),
+          SnackBar(
+            content: Text("¡Calificación enviada!"),
+            backgroundColor: AppColors.successColor,
+          ),
         );
       }
     } catch (e) {
@@ -97,19 +96,19 @@ class _RateUserDialogState extends State<RateUserDialog> {
           children: [
             Text(
               "Calificar a ${widget.userName}",
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
-            
+
             // --- ESTRELLAS ---
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(5, (index) => _buildStar(index + 1)),
             ),
             const SizedBox(height: 20),
-            
+
             // --- CAMPO DE TEXTO ---
             TextField(
               controller: _commentController,
@@ -124,7 +123,7 @@ class _RateUserDialogState extends State<RateUserDialog> {
               maxLines: 3,
             ),
             const SizedBox(height: 24),
-            
+
             // --- BOTONES ---
             Row(
               children: [
@@ -143,7 +142,7 @@ class _RateUserDialogState extends State<RateUserDialog> {
                   ),
                 ),
               ],
-            )
+            ),
           ],
         ),
       ),
