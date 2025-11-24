@@ -42,8 +42,9 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('Error al cargar detalle: ${e.toString()}'),
-              backgroundColor: AppColors.errorColor),
+            content: Text('Error al cargar detalle: ${e.toString()}'),
+            backgroundColor: AppColors.errorColor,
+          ),
         );
       }
     } finally {
@@ -61,8 +62,9 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
     if (tradeProvider.isCreatePendingFor(_listingId!)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Ya hay una oferta en proceso para este producto.'),
-            backgroundColor: AppColors.warningColor),
+          content: Text('Ya hay una oferta en proceso para este producto.'),
+          backgroundColor: AppColors.warningColor,
+        ),
       );
       return;
     }
@@ -81,8 +83,9 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text('¡Oferta enviada!'),
-              backgroundColor: AppColors.successColor),
+            content: Text('¡Oferta enviada!'),
+            backgroundColor: AppColors.successColor,
+          ),
         );
         Navigator.pop(context);
       }
@@ -90,8 +93,9 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('Error al enviar oferta: ${e.toString()}'),
-              backgroundColor: AppColors.errorColor),
+            content: Text('Error al enviar oferta: ${e.toString()}'),
+            backgroundColor: AppColors.errorColor,
+          ),
         );
       }
     } finally {
@@ -114,8 +118,8 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _listing == null
-              ? const Center(child: Text('No se pudo cargar la publicación.'))
-              : _buildListingDetails(),
+          ? const Center(child: Text('No se pudo cargar la publicación.'))
+          : _buildListingDetails(),
     );
   }
 
@@ -135,135 +139,149 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                 ? child
                 : Container(height: 250, color: Colors.grey[300]),
             errorBuilder: (context, error, stackTrace) => Container(
-                height: 250,
-                color: Colors.grey[300],
-                child: const Icon(Icons.error_outline)),
+              height: 250,
+              color: Colors.grey[300],
+              child: const Icon(Icons.error_outline),
+            ),
           ),
           const SizedBox(height: 16),
           // Título
-          Text(_listing!.title,
-              style: Theme.of(context).textTheme.headlineSmall),
+          Text(
+            _listing!.title,
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
           const SizedBox(height: 8),
           // Precio
-          Text('${_listing!.trueCoinValue} TrueCoins',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: AppColors.primary, fontWeight: FontWeight.bold)),
+          Text(
+            '${_listing!.trueCoinValue} TrueCoins',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           const SizedBox(height: 8),
           // Dueño
           // --- TARJETA DE VENDEDOR (Inicio) ---
-const SizedBox(height: 12),
-InkWell(
-  onTap: () {
-    // Navegar al nuevo perfil del vendedor
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => SellerProfileScreen(
-          sellerId: _listing!.ownerUserId,
-          sellerName: _listing!.ownerName ?? "Anónimo",
-          sellerAvatarUrl: _listing!.ownerAvatarUrl,
-          sellerRating: _listing!.ownerRating,
-        ),
-      ),
-    );
-  },
-  borderRadius: BorderRadius.circular(12),
-  child: Container(
-    padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      border: Border.all(color: Colors.grey.shade300),
-      borderRadius: BorderRadius.circular(12),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.05),
-          blurRadius: 5,
-          offset: const Offset(0, 2),
-        )
-      ],
-    ),
-    child: Row(
-      children: [
-        // Avatar
-        Hero(
-          tag: 'seller_${_listing!.ownerUserId}', // Debe coincidir con el tag en SellerProfile
-          child: CircleAvatar(
-            radius: 24,
-            backgroundImage: _listing!.ownerAvatarUrl != null
-                ? NetworkImage('${AppConstants.apiBaseUrl}${_listing!.ownerAvatarUrl}')
-                : null,
-            backgroundColor: AppColors.primary.withOpacity(0.1),
-            child: _listing!.ownerAvatarUrl == null
-                ? Icon(Icons.person, color: AppColors.primary)
-                : null,
-          ),
-        ),
-        const SizedBox(width: 12),
-        
-        // Info Nombre + Rating
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Vendido por:",
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
+          const SizedBox(height: 12),
+          InkWell(
+            onTap: () {
+              // Navegar al nuevo perfil del vendedor
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SellerProfileScreen(
+                    sellerId: _listing!.ownerUserId,
+                    sellerName: _listing!.ownerName ?? "Anónimo",
+                    sellerAvatarUrl: _listing!.ownerAvatarUrl,
+                    sellerRating: _listing!.ownerRating,
+                  ),
                 ),
+              );
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 5,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-              Text(
-                _listing!.ownerName ?? "Anónimo",
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
+              child: Row(
+                children: [
+                  // Avatar
+                  Hero(
+                    tag:
+                        'seller_${_listing!.ownerUserId}', // Debe coincidir con el tag en SellerProfile
+                    child: CircleAvatar(
+                      radius: 24,
+                      backgroundImage: _listing!.ownerAvatarUrl != null
+                          ? NetworkImage(
+                              '${AppConstants.apiBaseUrl}${_listing!.ownerAvatarUrl}',
+                            )
+                          : null,
+                      backgroundColor: AppColors.primary.withOpacity(0.1),
+                      child: _listing!.ownerAvatarUrl == null
+                          ? Icon(Icons.person, color: AppColors.primary)
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+
+                  // Info Nombre + Rating
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Vendido por:",
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        Text(
+                          _listing!.ownerName ?? "Anónimo",
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Estrellas a la derecha
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.star, color: Colors.amber, size: 18),
+                          const SizedBox(width: 4),
+                          Text(
+                            _listing!.ownerRating > 0
+                                ? _listing!.ownerRating.toStringAsFixed(1)
+                                : "-",
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                      Text(
+                        "Ver perfil >",
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
-        
-        // Estrellas a la derecha
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.star, color: Colors.amber, size: 18),
-                const SizedBox(width: 4),
-                Text(
-                  _listing!.ownerRating > 0 
-                      ? _listing!.ownerRating.toStringAsFixed(1) 
-                      : "-",
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ],
             ),
-            Text(
-              "Ver perfil >",
-              style: TextStyle(
-                fontSize: 12,
-                color: AppColors.primary,
-              ),
-            )
-          ],
-        ),
-      ],
-    ),
-  ),
-),
-// --- TARJETA DE VENDEDOR (Fin) ---
+          ),
+          // --- TARJETA DE VENDEDOR (Fin) ---
           const SizedBox(height: 16),
           // Descripción
-          Text(_listing!.description ?? 'Sin descripción.',
-              style: Theme.of(context).textTheme.bodyLarge),
+          Text(
+            _listing!.description ?? 'Sin descripción.',
+            style: Theme.of(context).textTheme.bodyLarge,
+          ),
           const SizedBox(height: 24),
           const Divider(),
           const SizedBox(height: 16),
 
           // --- Formulario para Iniciar Trueque ---
-          Text('Iniciar Trueque',
-              style: Theme.of(context).textTheme.titleLarge),
+          Text(
+            'Iniciar Trueque',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
           const SizedBox(height: 12),
           TextField(
             controller: _messageController,
@@ -271,10 +289,12 @@ InkWell(
               // Prefill default message including the listing title when user
               // taps the field and it is currently empty so they can edit it.
               if (_messageController.text.trim().isEmpty && _listing != null) {
-                final defaultMsg = "Hola, estoy interesado en tu '${_listing!.title}'";
+                final defaultMsg =
+                    "Hola, estoy interesado en tu '${_listing!.title}'";
                 _messageController.text = defaultMsg;
                 _messageController.selection = TextSelection.fromPosition(
-                    TextPosition(offset: defaultMsg.length));
+                  TextPosition(offset: defaultMsg.length),
+                );
               }
             },
             decoration: InputDecoration(
@@ -289,12 +309,11 @@ InkWell(
               ? const Center(child: CircularProgressIndicator())
               : ElevatedButton(
                   onPressed: _handleCreateTrade,
-                  child: const Text('Enviar Oferta'),
                   style: ElevatedButton.styleFrom(
-                    minimumSize:
-                        const Size(double.infinity, 50), // Botón ancho
+                    minimumSize: const Size(double.infinity, 50), // Botón ancho
                   ),
-                )
+                  child: const Text('Enviar Oferta'),
+                ),
         ],
       ),
     );

@@ -301,15 +301,13 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   void _showForgotPasswordDialog() {
-    final _emailCtrl = TextEditingController(
-      text: _emailController.text.trim(),
-    );
+    final emailCtrl = TextEditingController(text: _emailController.text.trim());
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Restablecer contraseña'),
         content: TextField(
-          controller: _emailCtrl,
+          controller: emailCtrl,
           decoration: const InputDecoration(labelText: 'Email'),
         ),
         actions: [
@@ -319,7 +317,7 @@ class _LoginScreenState extends State<LoginScreen>
           ),
           TextButton(
             onPressed: () async {
-              final email = _emailCtrl.text.trim();
+              final email = emailCtrl.text.trim();
               if (email.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Introduce tu email')),
