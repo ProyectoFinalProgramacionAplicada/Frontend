@@ -10,6 +10,8 @@ import 'providers/review_provider.dart';
 import 'providers/wallet_provider.dart';
 import 'providers/market_provider.dart';
 import 'providers/settings_provider.dart';
+import 'providers/p2p_order_provider.dart';
+import 'services/api_client.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,6 +38,7 @@ class TruekApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => WalletProvider()),
         ChangeNotifierProvider(create: (_) => MarketProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        ChangeNotifierProvider(create: (_) => P2POrderProvider(ApiClient().dio)),
       ],
       child: Sizer(
         builder: (context, orientation, deviceType) {

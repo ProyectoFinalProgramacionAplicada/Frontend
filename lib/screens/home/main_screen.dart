@@ -22,6 +22,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'dart:typed_data';
 import 'package:truekapp/screens/listing/pick_location_map_screen.dart';
+import 'package:truekapp/screens/wallet/wallet_screen.dart';
+import '../p2p/p2p_market_screen.dart';
 //import 'dart:io'; // Para mostrar el archivo de imagen
 
 class MainScreen extends StatefulWidget {
@@ -33,24 +35,13 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
-  // Índice visible en el BottomNavigationBar (0..3 para la versión web demo)
-  int _visibleNavIndex = 0;
 
-  // Map desde el índice visible del nav hacia el índice real de la página
-  // Mantiene la pantalla "Explorar" en el array _pages (índice 1), pero
-  // la oculta de la barra inferior y remapea los índices visibles a las páginas:
-  // visible 0 -> page 0 (Home)
-  // visible 1 -> page 2 (Publicar)
-  // visible 2 -> page 3 (Mensajes)
-  // visible 3 -> page 4 (Billetera)
-  final List<int> _navIndexToPage = [0, 2, 3, 4];
-
-  List<Widget> get _pages => [
+  List<Widget> get _navPages => [
     _HomeTab(),
-    _BrowseTab(),
     _AddItemTab(),
     _MessagesTab(),
     _WalletTab(),
+    const P2PMarketScreen(),
   ];
 
   @override
@@ -72,14 +63,11 @@ class _MainScreenState extends State<MainScreen> {
         //),
         //], Revisarrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr
       ),
-      body: _pages[_currentIndex],
+      body: _navPages[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
-        // mostramos el índice visible (0..3) en la UI
-        currentIndex: _visibleNavIndex,
+        currentIndex: _currentIndex,
         onTap: (i) => setState(() {
-          // remapeamos al índice real de la página
-          _visibleNavIndex = i;
-          _currentIndex = _navIndexToPage[i];
+          _currentIndex = i;
         }),
         type: BottomNavigationBarType.fixed,
         items: const [
@@ -99,6 +87,10 @@ class _MainScreenState extends State<MainScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.account_balance_wallet_outlined),
             label: 'Billetera',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.swap_horiz_outlined),
+            label: 'Mercado',
           ),
         ],
       ),
@@ -709,6 +701,7 @@ class _FeaturedListingCard extends StatelessWidget {
   }
 }
 
+// ignore: unused_element
 class _BrowseTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -1189,6 +1182,10 @@ class _WalletTabState extends State<_WalletTab> {
     return value % 1 == 0 ? value.toStringAsFixed(0) : value.toStringAsFixed(2);
   }
 
+  void _openWallet(BuildContext context, WalletOperationType type) {
+    Navigator.pushNamed(context, AppRoutes.wallet, arguments: type);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<WalletProvider>(
@@ -1229,16 +1226,38 @@ class _WalletTabState extends State<_WalletTab> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        side: const BorderSide(color: Colors.white70),
-                      ),
-                      onPressed: () {
-                        Navigator.pushNamed(context, AppRoutes.wallet);
-                      },
-                      icon: const Icon(Icons.add_circle_outline),
-                      label: const Text('Recargar'),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.white,
+                              side: const BorderSide(color: Colors.white70),
+                            ),
+                            onPressed: () => _openWallet(
+                              context,
+                              WalletOperationType.deposit,
+                            ),
+                            icon: const Icon(Icons.add_circle_outline),
+                            label: const Text('Recargar'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.white,
+                              side: const BorderSide(color: Colors.white70),
+                            ),
+                            onPressed: () => _openWallet(
+                              context,
+                              WalletOperationType.withdraw,
+                            ),
+                            icon: const Icon(Icons.arrow_downward),
+                            label: const Text('Retirar'),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -1310,6 +1329,12 @@ class _WalletEntryTile extends StatelessWidget {
         return 'Trueque enviado';
       case WalletEntryType.TradeReceived:
         return 'Trueque recibido';
+      case WalletEntryType.P2PDeposit:
+        return 'Recarga P2P';
+      case WalletEntryType.P2PWithdrawal:
+        return 'Retiro P2P';
+      case WalletEntryType.Adjustment:
+        return 'Ajuste de saldo';
     }
   }
 
