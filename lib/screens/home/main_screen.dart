@@ -114,6 +114,25 @@ class _MainScreenState extends State<MainScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // --- OPCIÓN MIS TRUEQUES ---
+              ListTile(
+                leading: const Icon(Icons.swap_horiz),
+                title: const Text('Mis trueques'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, AppRoutes.tradeList);
+                },
+              ),
+              // --- OPCIÓN CREAR TRUEQUE ---
+              ListTile(
+                leading: const Icon(Icons.add_circle_outline),
+                title: const Text('Crear trueque'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, AppRoutes.trade);
+                },
+              ),
+              const Divider(),
               // --- OPCIÓN PERFIL CORREGIDA ---
               ListTile(
                 leading: const Icon(Icons.person),
