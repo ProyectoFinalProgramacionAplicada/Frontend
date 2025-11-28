@@ -1,8 +1,7 @@
-import 'dart:async';
-
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../dto/p2p/p2p_order_create_request.dart';
 import '../../dto/p2p/p2p_order_dto.dart';
@@ -34,34 +33,6 @@ class _P2POrderDetailView extends StatefulWidget {
 }
 
 class _P2POrderDetailViewState extends State<_P2POrderDetailView> {
-  Timer? _refreshTimer;
-
-  @override
-  void initState() {
-    super.initState();
-    _startAutoRefresh();
-  }
-
-  void _startAutoRefresh() {
-    _refreshTimer?.cancel();
-    _refreshTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
-      if (!mounted) return;
-      try {
-        await context
-            .read<P2POrderDetailProvider>()
-            .loadOrder(widget.orderId);
-      } catch (_) {
-        // Silenciar errores en refresco automático
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _refreshTimer?.cancel();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
@@ -90,6 +61,7 @@ class _P2POrderDetailViewState extends State<_P2POrderDetailView> {
                     : _OrderDetailContent(
                         order: order,
                         isProcessing: provider.isProcessing,
+                        isRefreshing: provider.isLoading,
                         onMarkPaid: () => _handleAction(
                           context,
                           () => provider.markAsPaid(order.id),
@@ -100,6 +72,7 @@ class _P2POrderDetailViewState extends State<_P2POrderDetailView> {
                           () => provider.releaseOrder(order.id),
                           'Has liberado los TrueCoins.',
                         ),
+                        onRefreshOrder: () => _handleManualRefresh(provider),
                         authUserId: auth.user?.id,
                       ),
               );
@@ -117,6 +90,18 @@ class _P2POrderDetailViewState extends State<_P2POrderDetailView> {
     );
   }
 
+  Future<void> _handleManualRefresh(P2POrderDetailProvider provider) async {
+    try {
+      await provider.loadOrder(widget.orderId);
+    } on DioException catch (error) {
+      if (!mounted) return;
+      _showError(context, _mapDioError(error));
+    } catch (error) {
+      if (!mounted) return;
+      _showError(context, error.toString());
+    }
+  }
+
   Future<void> _handleAction(
     BuildContext context,
     Future<void> Function() action,
@@ -130,8 +115,10 @@ class _P2POrderDetailViewState extends State<_P2POrderDetailView> {
         );
       }
     } on DioException catch (error) {
+      if (!context.mounted) return;
       _showError(context, _mapDioError(error));
     } catch (error) {
+      if (!context.mounted) return;
       _showError(context, error.toString());
     }
   }
@@ -155,15 +142,19 @@ class _P2POrderDetailViewState extends State<_P2POrderDetailView> {
 class _OrderDetailContent extends StatelessWidget {
   final P2POrderDto order;
   final bool isProcessing;
+  final bool isRefreshing;
   final Future<void> Function() onMarkPaid;
   final Future<void> Function() onRelease;
+  final Future<void> Function() onRefreshOrder;
   final int? authUserId;
 
   const _OrderDetailContent({
     required this.order,
     required this.isProcessing,
+    required this.isRefreshing,
     required this.onMarkPaid,
     required this.onRelease,
+    required this.onRefreshOrder,
     required this.authUserId,
   });
 
@@ -173,6 +164,7 @@ class _OrderDetailContent extends StatelessWidget {
     final releaserId = _releaserUserId(order);
     final canMarkPaid = _canMarkPaid(order, authUserId, payerId);
     final canRelease = _canRelease(order, authUserId, releaserId);
+    final showPaymentQr = _shouldShowPaymentQr(order, authUserId, payerId);
 
     final actionButtons = <Widget>[
       if (canMarkPaid)
@@ -205,21 +197,33 @@ class _OrderDetailContent extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       physics: const AlwaysScrollableScrollPhysics(),
       children: [
-        _InfoCard(order: order),
+        _InfoCard(
+          order: order,
+          isRefreshing: isRefreshing,
+          onRefresh: onRefreshOrder,
+        ),
         const SizedBox(height: 16),
         _StakeholdersCard(
           order: order,
           payerId: payerId,
           releaserId: releaserId,
         ),
+        if (showPaymentQr) ...[
+          const SizedBox(height: 16),
+          _PaymentQrCard(
+            order: order,
+            payerId: payerId,
+            releaserId: releaserId,
+          ),
+        ],
         if (actionButtons.isNotEmpty) ...[
           const SizedBox(height: 24),
-          ...actionButtons
-              .map((button) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: button,
-                  ))
-              .toList(),
+          ...actionButtons.map(
+            (button) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: button,
+            ),
+          ),
         ],
       ],
     );
@@ -252,11 +256,25 @@ class _OrderDetailContent extends StatelessWidget {
         order.status == P2POrderStatus.paid &&
         userId == releaserId;
   }
+
+  bool _shouldShowPaymentQr(
+      P2POrderDto order, int? userId, int? payerId) {
+    return userId != null &&
+        payerId != null &&
+        order.status == P2POrderStatus.matched &&
+        userId == payerId;
+  }
 }
 
 class _InfoCard extends StatelessWidget {
   final P2POrderDto order;
-  const _InfoCard({required this.order});
+  final bool isRefreshing;
+  final Future<void> Function() onRefresh;
+  const _InfoCard({
+    required this.order,
+    required this.isRefreshing,
+    required this.onRefresh,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -273,9 +291,27 @@ class _InfoCard extends StatelessWidget {
                   _typeLabel(order.type),
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                 ),
-                Chip(
-                  label: Text(_statusLabel(order.status)),
-                  backgroundColor: _statusColor(order.status).withOpacity(0.15),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Chip(
+                      label: Text(_statusLabel(order.status)),
+                      backgroundColor:
+                        _statusColor(order.status).withValues(alpha: 0.15),
+                    ),
+                    IconButton(
+                      tooltip: 'Actualizar orden',
+                      onPressed:
+                          isRefreshing ? null : () => onRefresh(),
+                      icon: isRefreshing
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.refresh),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -384,6 +420,64 @@ class _StakeholdersCard extends StatelessWidget {
             _InfoRow(
               label: 'Debe liberar',
               value: releaserId != null ? 'Usuario #$releaserId' : 'En espera de contraparte',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PaymentQrCard extends StatelessWidget {
+  final P2POrderDto order;
+  final int? payerId;
+  final int? releaserId;
+
+  const _PaymentQrCard({
+    required this.order,
+    required this.payerId,
+    required this.releaserId,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final payload = {
+      'orderId': order.id.toString(),
+      'type': order.type == P2POrderType.deposit ? 'deposit' : 'withdraw',
+      'amountBob': order.amountBob.toStringAsFixed(2),
+      'amountTC': order.amountTrueCoins.toStringAsFixed(2),
+      'payerId': payerId?.toString() ?? '',
+      'releaserId': releaserId?.toString() ?? '',
+    };
+    final qrData = payload.entries.map((e) => '${e.key}=${e.value}').join('&');
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'QR para pago en bolivianos',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Monto: Bs ${order.amountBob.toStringAsFixed(2)}',
+              style: const TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 12),
+            Center(
+              child: QrImageView(
+                data: qrData,
+                version: QrVersions.auto,
+                size: 220,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Escanea este código para realizar la transferencia en BOB.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ],
         ),
