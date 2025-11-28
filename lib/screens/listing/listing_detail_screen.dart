@@ -6,6 +6,7 @@ import '../../providers/trade_provider.dart';
 import '../../dto/listing/listing_dto.dart';
 import '../../dto/trade/trade_create_dto.dart';
 import '../../core/app_export.dart'; // Para AppColors y AppRoutes
+import '../../screens/trade/trade_create_screen.dart';
 
 class ListingDetailScreen extends StatefulWidget {
   const ListingDetailScreen({super.key});
@@ -308,11 +309,21 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
           _isCreatingTrade
               ? const Center(child: CircularProgressIndicator())
               : ElevatedButton(
-                  onPressed: _handleCreateTrade,
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => TradeCreateScreen(
+                          targetListingId: _listingId!,
+                          targetTitle: _listing!.title,
+                        ),
+                      ),
+                    );
+                  },
                   style: ElevatedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 50), // Botón ancho
+                    minimumSize: const Size(double.infinity, 50),
                   ),
-                  child: const Text('Enviar Oferta'),
+                  child: const Text('Crear Oferta'),
                 ),
         ],
       ),
