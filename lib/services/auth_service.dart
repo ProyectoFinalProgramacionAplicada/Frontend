@@ -6,7 +6,7 @@ import '../dto/auth/user_register_dto.dart';
 import '../dto/auth/token_dto.dart';
 import '../dto/auth/user_info_dto.dart';
 // AÑADIDO: El DTO para actualizar perfil
-import '../dto/auth/user_update_dto.dart'; 
+import '../dto/auth/user_update_dto.dart';
 
 class ValidationException implements Exception {
   final Map<String, List<String>> errors;
@@ -136,7 +136,7 @@ class AuthService {
     try {
       // IMPORTANTE: La ruta es /Users/me porque el backend lo definimos en UsersController
       final response = await _dio.put('/Users/me', data: dto.toJson());
-      
+
       // Si el backend devuelve 200 OK, todo salió bien
       return response.statusCode == 200;
     } on DioException catch (e) {
@@ -159,10 +159,11 @@ class AuthService {
           if (errors is Map) {
             final msgs = <String>[];
             errors.forEach((k, v) {
-              if (v is List)
+              if (v is List) {
                 msgs.addAll(v.map((e) => e.toString()));
-              else
+              } else {
                 msgs.add(v.toString());
+              }
             });
             return msgs.join(' | ');
           }
@@ -179,10 +180,10 @@ class AuthService {
   // 1. Cambiar Contraseña
   Future<bool> changePassword(String oldPassword, String newPassword) async {
     try {
-      final response = await _dio.put('/Users/me/password', data: {
-        'oldPassword': oldPassword,
-        'newPassword': newPassword,
-      });
+      final response = await _dio.put(
+        '/Users/me/password',
+        data: {'oldPassword': oldPassword, 'newPassword': newPassword},
+      );
       return response.statusCode == 200;
     } on DioException catch (e) {
       final msg = _extractMessageFromResponse(e.response?.data);
@@ -198,14 +199,11 @@ class AuthService {
         "file": MultipartFile.fromBytes(bytes, filename: fileName),
       });
 
-      final response = await _dio.post(
-        '/Users/me/avatar',
-        data: formData,
-      );
+      final response = await _dio.post('/Users/me/avatar', data: formData);
 
       if (response.statusCode == 200) {
         // El backend devuelve: { "avatarUrl": "/uploads/..." }
-        return response.data['avatarUrl']; 
+        return response.data['avatarUrl'];
       }
       return null;
     } on DioException catch (e) {

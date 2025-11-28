@@ -12,6 +12,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import '../../providers/trade_provider.dart';
 import '../../dto/trade/trade_status.dart';
+import '../../dto/trade/trade_dto.dart';
 import '../../providers/wallet_provider.dart';
 import '../../dto/wallet/wallet_entry_dto.dart';
 import '../../dto/wallet/wallet_entry_type.dart';
@@ -97,7 +98,7 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-void _showMenu(BuildContext context, AuthProvider auth) {
+  void _showMenu(BuildContext context, AuthProvider auth) {
     showModalBottomSheet(
       context: context,
       builder: (_) {
@@ -105,13 +106,35 @@ void _showMenu(BuildContext context, AuthProvider auth) {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // --- OPCIÓN MIS TRUEQUES ---
+              ListTile(
+                leading: const Icon(Icons.swap_horiz),
+                title: const Text('Mis trueques'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, AppRoutes.tradeList);
+                },
+              ),
+              // --- OPCIÓN CREAR TRUEQUE ---
+              ListTile(
+                leading: const Icon(Icons.add_circle_outline),
+                title: const Text('Crear trueque'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, AppRoutes.trade);
+                },
+              ),
+              const Divider(),
               // --- OPCIÓN PERFIL CORREGIDA ---
               ListTile(
                 leading: const Icon(Icons.person),
                 title: const Text('Ver perfil'),
                 onTap: () {
                   Navigator.pop(context); // Cierra el menú
-                  Navigator.pushNamed(context, AppRoutes.profile); // Va a la pantalla nueva
+                  Navigator.pushNamed(
+                    context,
+                    AppRoutes.profile,
+                  ); // Va a la pantalla nueva
                 },
               ),
               // --- OPCIÓN CERRAR SESIÓN (Se mantiene igual) ---
@@ -130,7 +153,7 @@ void _showMenu(BuildContext context, AuthProvider auth) {
       },
     );
   }
-  }
+}
 
 // --- Tabs ---
 class _HomeTab extends StatefulWidget {
@@ -249,6 +272,7 @@ class _HomeTabState extends State<_HomeTab> {
             ),
           );
           await _updateCityFromPosition();
+          await _loadNearbyListings();
         }
       } else {
         bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -266,9 +290,34 @@ class _HomeTabState extends State<_HomeTab> {
         if (!mounted) return;
         setState(() => _currentPosition = position);
         await _updateCityFromPosition();
+        await _loadNearbyListings();
       }
     } catch (_) {
       // Ignorar errores silenciosamente; la UI mostrará "Cerca de ti"
+    }
+  }
+
+  Future<void> _loadNearbyListings() async {
+    if (_currentPosition != null) {
+      debugPrint('Posición actual: $_currentPosition');
+      try {
+        await Provider.of<ListingProvider>(
+          context,
+          listen: false,
+        ).fetchNearbyListings(
+          latitude: _currentPosition!.latitude,
+          longitude: _currentPosition!.longitude,
+          radius: 25,
+        );
+        debugPrint(
+          'Trueques cercanos encontrados: ${Provider.of<ListingProvider>(context, listen: false).nearbyListings.length}',
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error cargando cercanos: $e')));
+      }
     }
   }
 
@@ -317,6 +366,7 @@ class _HomeTabState extends State<_HomeTab> {
             ? 0
             : _featuredIndex % totalFeatured;
 
+        // Volvemos al padding estándar (sin el parche conservador de +100px)
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -432,6 +482,226 @@ class _HomeTabState extends State<_HomeTab> {
                           },
                         ),
                       ),
+              ),
+
+              SizedBox(
+                height: 290, // altura fija, ajusta a lo que necesites
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Cerca de ti',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      child: listingProvider.isLoadingNearby
+                          ? const Center(child: CircularProgressIndicator())
+                          : listingProvider.nearbyListings.isEmpty
+                          ? Center(
+                              child: TextButton.icon(
+                                onPressed: () async {
+                                  await Provider.of<ListingProvider>(
+                                    context,
+                                    listen: false,
+                                  ).fetchNearbyListings(
+                                    latitude: _currentPosition?.latitude ?? 0,
+                                    longitude: _currentPosition?.longitude ?? 0,
+                                    radius: 25,
+                                  );
+                                },
+                                icon: const Icon(Icons.refresh),
+                                label: const Text(
+                                  'Sin resultados cerca de ti. Recargar',
+                                ),
+                              ),
+                            )
+                          : ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: listingProvider.nearbyListings.length,
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(width: 12),
+                              itemBuilder: (context, idx) {
+                                final listing =
+                                    listingProvider.nearbyListings[idx];
+                                final distanceLabel = _formatDistance(listing);
+                                return GestureDetector(
+                                  onTap: () => Navigator.pushNamed(
+                                    context,
+                                    AppRoutes.listingDetail,
+                                    arguments: listing.id,
+                                  ),
+                                  child: SizedBox(
+                                    width: 300,
+                                    child: Card(
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      clipBehavior: Clip.antiAlias,
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          AspectRatio(
+                                            aspectRatio: 16 / 11,
+                                            child: ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(0),
+                                              child: Stack(
+                                                fit: StackFit.expand,
+                                                children: [
+                                                  Image.network(
+                                                    listing.imageUrl,
+                                                    fit: BoxFit.cover,
+                                                    loadingBuilder:
+                                                        (
+                                                          context,
+                                                          child,
+                                                          progress,
+                                                        ) {
+                                                          if (progress ==
+                                                              null) {
+                                                            return child;
+                                                          }
+                                                          return Container(
+                                                            color: Colors
+                                                                .grey[200],
+                                                            child: const Center(
+                                                              child:
+                                                                  CircularProgressIndicator(),
+                                                            ),
+                                                          );
+                                                        },
+                                                    errorBuilder:
+                                                        (
+                                                          context,
+                                                          error,
+                                                          stack,
+                                                        ) => Container(
+                                                          color:
+                                                              Colors.grey[200],
+                                                          child: const Center(
+                                                            child: Icon(
+                                                              Icons
+                                                                  .image_not_supported_outlined,
+                                                              color:
+                                                                  Colors.grey,
+                                                              size: 36,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                  ),
+                                                  Positioned.fill(
+                                                    child: DecoratedBox(
+                                                      decoration: BoxDecoration(
+                                                        gradient: LinearGradient(
+                                                          begin: Alignment
+                                                              .topCenter,
+                                                          end: Alignment
+                                                              .bottomCenter,
+                                                          colors: [
+                                                            Colors.transparent,
+                                                            Colors.black
+                                                                .withOpacity(
+                                                                  0.55,
+                                                                ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  Positioned(
+                                                    left: 12,
+                                                    right: 12,
+                                                    bottom: 12,
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Text(
+                                                          listing.title,
+                                                          maxLines: 2,
+                                                          overflow: TextOverflow
+                                                              .ellipsis,
+                                                          style:
+                                                              const TextStyle(
+                                                                color: Colors
+                                                                    .white,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w700,
+                                                              ),
+                                                        ),
+                                                        const SizedBox(
+                                                          height: 6,
+                                                        ),
+                                                        Row(
+                                                          children: [
+                                                            const Icon(
+                                                              Icons.location_on,
+                                                              size: 14,
+                                                              color: Colors
+                                                                  .white70,
+                                                            ),
+                                                            const SizedBox(
+                                                              width: 6,
+                                                            ),
+                                                            Flexible(
+                                                              child: Text(
+                                                                distanceLabel ??
+                                                                    'Cerca de ti',
+                                                                style: const TextStyle(
+                                                                  color: Colors
+                                                                      .white70,
+                                                                  fontSize: 12,
+                                                                ),
+                                                                overflow:
+                                                                    TextOverflow
+                                                                        .ellipsis,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                          Padding(
+                                            padding: const EdgeInsets.all(12),
+                                            child: Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.monetization_on,
+                                                  size: 18,
+                                                  color: AppColors.primary,
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  '${_formatCoins(listing.trueCoinValue)} coins',
+                                                  style: const TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
               ),
 
               const SizedBox(height: 16),
@@ -1050,6 +1320,15 @@ class _MessagesTabState extends State<_MessagesTab> {
     Provider.of<TradeProvider>(context, listen: false).fetchMyTrades();
   }
 
+  // Filter state for trades list
+  TradeFilter _filter = TradeFilter.All;
+
+  // Helper predicates
+  bool _isBuying(int currentUserId, TradeDto t) =>
+      t.requesterUserId == currentUserId;
+  bool _isSelling(int currentUserId, TradeDto t) =>
+      t.ownerUserId == currentUserId;
+
   // --- Helpers para mostrar el estado del Trueque ---
 
   // Devuelve un texto legible para el estado
@@ -1087,6 +1366,10 @@ class _MessagesTabState extends State<_MessagesTab> {
 
   @override
   Widget build(BuildContext context) {
+    // Get current user id from AuthProvider
+    final auth = Provider.of<AuthProvider>(context);
+    final currentUserId = auth.user?.id ?? -1;
+
     // Usamos Consumer para que la UI reaccione a los cambios del TradeProvider
     return Consumer<TradeProvider>(
       builder: (context, tradeProvider, child) {
@@ -1105,61 +1388,183 @@ class _MessagesTabState extends State<_MessagesTab> {
           );
         }
 
-        // 3. Mostrar la lista de trueques (conversaciones)
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: tradeProvider.myTrades.length,
-          itemBuilder: (context, index) {
-            // Obtenemos el trade específico
-            final trade = tradeProvider.myTrades[index];
+        // 3. Filtros de pestañas (Todos / Comprando / Vendiendo)
+        final filtered = tradeProvider.myTrades.where((t) {
+          switch (_filter) {
+            case TradeFilter.All:
+              return true;
+            case TradeFilter.Buying:
+              return t.requesterUserId == currentUserId;
+            case TradeFilter.Selling:
+              return t.ownerUserId == currentUserId;
+          }
+        }).toList();
 
-            return ListTile(
-              leading: CircleAvatar(
-                backgroundColor: Colors.grey[300],
-                child: const Icon(
-                  Icons.person_outline,
-                  color: Colors.white,
-                ), // Placeholder
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                children: [
+                  _buildFilterButton(TradeFilter.All, 'Todos'),
+                  const SizedBox(width: 8),
+                  _buildFilterButton(TradeFilter.Buying, 'Comprando'),
+                  const SizedBox(width: 8),
+                  _buildFilterButton(TradeFilter.Selling, 'Vendiendo'),
+                ],
               ),
-              title: FutureBuilder<String?>(
-                future: tradeProvider.fetchListingTitle(trade.targetListingId),
-                initialData: tradeProvider.getCachedListingTitle(
-                  trade.targetListingId,
-                ),
-                builder: (context, snapshot) {
-                  final title = snapshot.data ?? 'Trueque #${trade.id}';
-                  return Text(title);
+            ),
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: filtered.length,
+                itemBuilder: (context, index) {
+                  final trade = filtered[index];
+                  final isBuying = trade.requesterUserId == currentUserId;
+                  final isSelling = trade.ownerUserId == currentUserId;
+
+                  Widget roleChip() {
+                    if (isBuying) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text(
+                          'Comprando',
+                          style: TextStyle(color: Colors.green),
+                        ),
+                      );
+                    } else if (isSelling) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text(
+                          'Vendiendo',
+                          style: TextStyle(color: Colors.orange),
+                        ),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  }
+
+                  String roleSubtitle() {
+                    if (isBuying) return 'Oferta enviada por ti';
+                    if (isSelling) return 'Oferta recibida';
+                    return trade.message ?? 'Ver detalles del trueque...';
+                  }
+
+                  return ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: Colors.grey[300],
+                      child: const Icon(
+                        Icons.person_outline,
+                        color: Colors.white,
+                      ),
+                    ),
+                    title: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            roleChip(),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: FutureBuilder<String?>(
+                                future: tradeProvider.fetchListingTitle(
+                                  trade.targetListingId,
+                                ),
+                                initialData: tradeProvider
+                                    .getCachedListingTitle(
+                                      trade.targetListingId,
+                                    ),
+                                builder: (context, snapshot) {
+                                  final title =
+                                      snapshot.data ?? 'Trueque #${trade.id}';
+                                  return Text(
+                                    title,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          roleSubtitle(),
+                          style: const TextStyle(color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                    trailing: Chip(
+                      label: Text(
+                        _getStatusText(trade.status),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      backgroundColor: _getStatusColor(trade.status),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 0,
+                      ),
+                    ),
+                    onTap: () {
+                      Navigator.pushNamed(
+                        context,
+                        AppRoutes.tradeChat,
+                        arguments: trade.id,
+                      );
+                    },
+                  );
                 },
               ),
-              subtitle: Text(
-                trade.message ?? 'Ver detalles del trueque...',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              // Usamos un Chip para el estado
-              trailing: Chip(
-                label: Text(
-                  _getStatusText(trade.status),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                backgroundColor: _getStatusColor(trade.status),
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
-              ),
-              onTap: () {
-                // Navegar a la pantalla de chat pasando el trade.id
-                Navigator.pushNamed(
-                  context,
-                  AppRoutes.tradeChat,
-                  arguments: trade.id,
-                );
-              },
-            );
-          },
+            ),
+          ],
         );
       },
+    );
+  }
+}
+
+// Local enum for filtering trades
+enum TradeFilter { All, Buying, Selling }
+
+extension on _MessagesTabState {
+  Widget _buildFilterButton(TradeFilter f, String label) {
+    final selected = _filter == f;
+    return Expanded(
+      child: OutlinedButton(
+        style: OutlinedButton.styleFrom(
+          backgroundColor: selected
+              ? AppColors.primary.withOpacity(0.08)
+              : null,
+          side: BorderSide(
+            color: selected ? AppColors.primary : Colors.grey.shade300,
+          ),
+        ),
+        onPressed: () => setState(() => _filter = f),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? AppColors.primary : Colors.black87,
+          ),
+        ),
+      ),
     );
   }
 }

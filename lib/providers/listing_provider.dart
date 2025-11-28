@@ -10,7 +10,9 @@ class ListingProvider extends ChangeNotifier {
   final ListingService _listingService = ListingService();
 
   List<ListingDto> listings = [];
+  List<ListingDto> nearbyListings = [];
   bool isLoading = false;
+  bool isLoadingNearby = false;
 
   ListingDto? selectedListing;
 
@@ -50,6 +52,30 @@ class ListingProvider extends ChangeNotifier {
     }
   }
 
+  // Nuevo método: fetch nearby listings
+  Future<void> fetchNearbyListings({
+    required double latitude,
+    required double longitude,
+    double radius = 25.0,
+  }) async {
+    isLoadingNearby = true;
+    notifyListeners();
+    try {
+      nearbyListings = await _listingService.getNearbyListings(
+        latitude: latitude,
+        longitude: longitude,
+        radius: radius,
+      );
+    } catch (e) {
+      // No queremos que un fallo en nearby afecte al estado global del catálogo
+      debugPrint('Error fetching nearby listings: $e');
+      rethrow;
+    } finally {
+      isLoadingNearby = false;
+      notifyListeners();
+    }
+  }
+
   // Crear publicación
   Future<void> createListing(ListingCreateDto dto) async {
     await _listingService.createListing(dto);
@@ -77,7 +103,7 @@ class ListingProvider extends ChangeNotifier {
       final result = await _listingService.getCatalog(ownerId: ownerId);
       return result;
     } catch (e) {
-      print("Error fetching owner listings: $e");
+      debugPrint("Error fetching owner listings: $e");
       rethrow;
     }
   }

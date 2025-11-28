@@ -4,7 +4,7 @@ import '../../services/api_client.dart';
 import 'package:flutter/services.dart';
 
 class TokenDebugScreen extends StatefulWidget {
-  const TokenDebugScreen({Key? key}) : super(key: key);
+  const TokenDebugScreen({super.key});
 
   @override
   State<TokenDebugScreen> createState() => _TokenDebugScreenState();
@@ -72,15 +72,25 @@ class _TokenDebugScreenState extends State<TokenDebugScreen> {
                       ElevatedButton(
                         onPressed: () async {
                           await _saveToken();
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Token guardado y aplicado')));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Token guardado y aplicado'),
+                            ),
+                          );
                         },
                         child: const Text('Guardar y aplicar'),
                       ),
                       const SizedBox(width: 8),
                       ElevatedButton(
                         onPressed: () async {
-                          await Clipboard.setData(ClipboardData(text: _token ?? ''));
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Token copiado al clipboard')));
+                          await Clipboard.setData(
+                            ClipboardData(text: _token ?? ''),
+                          );
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Token copiado al clipboard'),
+                            ),
+                          );
                         },
                         child: const Text('Copiar token'),
                       ),
@@ -94,8 +104,12 @@ class _TokenDebugScreenState extends State<TokenDebugScreen> {
                   const SizedBox(height: 20),
                   const Text('Instrucciones:'),
                   const SizedBox(height: 8),
-                  const Text('- Usa "Guardar y aplicar" para probar llamadas protegidas desde la app.'),
-                  const Text('- Copia el token y úsalo en PowerShell con Authorization: Bearer <token>.'),
+                  const Text(
+                    '- Usa "Guardar y aplicar" para probar llamadas protegidas desde la app.',
+                  ),
+                  const Text(
+                    '- Copia el token y úsalo en PowerShell con Authorization: Bearer <token>.',
+                  ),
                 ],
               ),
       ),

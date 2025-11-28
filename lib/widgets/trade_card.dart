@@ -1,0 +1,361 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../dto/trade/trade_dto.dart';
+import '../dto/trade/trade_status.dart';
+import '../providers/trade_provider.dart';
+import '../providers/auth_provider.dart';
+import '../providers/listing_provider.dart';
+import '../dto/trade/trade_update_status_dto.dart';
+import '../dto/listing/listing_dto.dart';
+import '../services/listing_service.dart';
+import '../widgets/trade_counter_offer_dialog.dart';
+import '../screens/trade/trade_chat_screen.dart';
+
+class TradeCard extends StatelessWidget {
+  final TradeDto trade;
+  const TradeCard({Key? key, required this.trade}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = Provider.of<AuthProvider>(context);
+    final tradeProvider = Provider.of<TradeProvider>(context, listen: false);
+    final listingProvider = Provider.of<ListingProvider>(
+      context,
+      listen: false,
+    );
+
+    final currentUser = auth.currentUser;
+    final isSeller =
+        currentUser != null && currentUser.id == trade.listingOwnerId;
+    final isInitiator =
+        currentUser != null && currentUser.id == trade.initiatorUserId;
+
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Si es oferta recibida (no soy iniciador pero soy vendedor), mostrar quién la hizo
+            if (isSeller && !isInitiator)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.person_outline,
+                      size: 16,
+                      color: Colors.grey,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Oferta de ${trade.initiatorUserId}',
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+            Row(
+              children: [
+                // Thumbnail del listing objetivo
+                FutureBuilder<ListingDto>(
+                  future: ListingService().getListingById(
+                    trade.targetListingId,
+                  ),
+                  builder: (context, snap) {
+                    final img = snap.hasData ? snap.data!.imageUrl : null;
+                    return ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: img != null
+                          ? Image.network(
+                              img,
+                              width: 56,
+                              height: 56,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                width: 56,
+                                height: 56,
+                                color: Colors.grey[300],
+                                child: const Icon(Icons.image),
+                              ),
+                            )
+                          : Container(
+                              width: 56,
+                              height: 56,
+                              color: Colors.grey[200],
+                              child: const Icon(Icons.image),
+                            ),
+                    );
+                  },
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FutureBuilder<String?>(
+                    future: tradeProvider.fetchListingTitle(
+                      trade.targetListingId,
+                    ),
+                    builder: (context, snap) {
+                      final title =
+                          snap.data ?? 'Publicación #${trade.targetListingId}';
+                      return Text(
+                        title,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  trade.status.toString().split('.').last,
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 8),
+
+            Row(
+              children: [
+                if (trade.offeredListingId != null) ...[
+                  FutureBuilder<ListingDto>(
+                    future: ListingService().getListingById(
+                      trade.offeredListingId!,
+                    ),
+                    builder: (context, snap) {
+                      if (snap.hasData) {
+                        final l = snap.data!;
+                        return Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(6),
+                              child: Image.network(
+                                l.imageUrl,
+                                width: 40,
+                                height: 40,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Container(
+                                  width: 40,
+                                  height: 40,
+                                  color: Colors.grey[300],
+                                  child: const Icon(Icons.image),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Chip(label: Text(l.title)),
+                          ],
+                        );
+                      }
+                      return Chip(
+                        label: Text(
+                          'Listing ofrecido: ${trade.offeredListingId}',
+                        ),
+                      );
+                    },
+                  ),
+                ],
+                if (trade.offeredTrueCoins != null)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8.0),
+                    child: Chip(
+                      label: Text('Ofrece ${trade.offeredTrueCoins} TC'),
+                    ),
+                  ),
+                if (trade.requestedTrueCoins != null)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8.0),
+                    child: Chip(
+                      label: Text('Solicita ${trade.requestedTrueCoins} TC'),
+                    ),
+                  ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.chat_bubble_outline),
+                    label: const Text('Chat'),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const TradeChatScreen(),
+                          settings: RouteSettings(arguments: trade.id),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.swap_horiz),
+                    label: const Text('Contraoferta'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                    ),
+                    onPressed: () async {
+                      final me = currentUser!;
+                      // Cargar listings propios y deduplicar por ID
+                      final rawMyListings = await listingProvider
+                          .getListingsByOwner(me.id);
+                      final Map<int, ListingDto> byMyId = {};
+                      for (final l in rawMyListings) {
+                        if (l.id != null) byMyId[l.id] = l;
+                      }
+                      final myListings = byMyId.values.toList();
+
+                      // Determinar el usuario opuesto y traer sus listings para poder solicitar cambio
+                      final opponentId = (me.id == trade.initiatorUserId)
+                          ? trade.listingOwnerId
+                          : trade.initiatorUserId;
+                      final rawOpponentListings = await listingProvider
+                          .getListingsByOwner(opponentId);
+                      final Map<int, ListingDto> byOppId = {};
+                      for (final l in rawOpponentListings) {
+                        if (l.id != null) byOppId[l.id] = l;
+                      }
+                      final opponentListings = byOppId.values.toList();
+
+                      final result = await showDialog<dynamic>(
+                        context: context,
+                        builder: (_) => TradeCounterOfferDialog(
+                          myListings: myListings,
+                          opponentListings: opponentListings,
+                          currentOfferedListingId: trade.offeredListingId,
+                          currentOfferedTrueCoins: trade.offeredTrueCoins,
+                          currentRequestedTrueCoins: trade.requestedTrueCoins,
+                        ),
+                      );
+
+                      if (result is Map) {
+                        try {
+                          final requestedOtherListingId =
+                              result['requestedOtherListingId'] as int?;
+                          String? message;
+                          if (requestedOtherListingId != null) {
+                            final reqTitle = opponentListings
+                                .firstWhere(
+                                  (l) => l.id == requestedOtherListingId,
+                                  orElse: () => ListingDto(
+                                    id: requestedOtherListingId,
+                                    title:
+                                        'publicación #$requestedOtherListingId',
+                                    trueCoinValue: 0.0,
+                                    isPublished: true,
+                                    imageUrl: '',
+                                    latitude: 0.0,
+                                    longitude: 0.0,
+                                    ownerUserId: opponentId,
+                                    ownerName: null,
+                                    ownerAvatarUrl: null,
+                                    ownerRating: 0.0,
+                                  ),
+                                )
+                                .title;
+                            message =
+                                'Por favor, cambia tu publicación a: $reqTitle (id: $requestedOtherListingId)';
+                          }
+
+                          await tradeProvider.sendCounterOffer(
+                            trade.id,
+                            offeredListingId:
+                                result['offeredListingId'] as int?,
+                            offeredTrueCoins:
+                                result['offeredTrueCoins'] as double?,
+                            requestedTrueCoins:
+                                result['requestedTrueCoins'] as double?,
+                            message: message,
+                          );
+
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Contraoferta enviada'),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted)
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Error: $e')),
+                            );
+                        }
+                      }
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  if (isSeller && trade.status == TradeStatus.Pending) ...[
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.check),
+                      label: const Text('Aceptar'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                      ),
+                      onPressed: () async {
+                        try {
+                          await tradeProvider.acceptTrade(trade.id);
+                          if (context.mounted)
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Oferta aceptada'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                        } catch (e) {
+                          if (context.mounted)
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error: $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                        }
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.close),
+                      label: const Text('Rechazar'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                      ),
+                      onPressed: () async {
+                        try {
+                          await tradeProvider.updateTradeStatus(
+                            trade.id,
+                            TradeUpdateStatusDto(status: TradeStatus.Cancelled),
+                          );
+                          if (context.mounted)
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Oferta rechazada'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                        } catch (e) {
+                          if (context.mounted)
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error: $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                        }
+                      },
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

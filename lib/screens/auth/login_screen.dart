@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../core/app_export.dart';
 import '../../services/auth_service.dart';
 import '../../providers/auth_provider.dart';
+import '../../dto/auth/app_role.dart';
 import '../../widgets/custom_input.dart';
 import '../../widgets/primary_button.dart';
 
@@ -174,7 +175,12 @@ class _LoginScreenState extends State<LoginScreen>
       // Haptic feedback
       HapticFeedback.lightImpact();
 
-      if (mounted) {
+      if (!mounted) return;
+
+      final role = authProvider.currentUser?.role;
+      if (role == AppRole.Admin) {
+        Navigator.pushReplacementNamed(context, AppRoutes.adminActiveUsers);
+      } else {
         Navigator.pushReplacementNamed(context, AppRoutes.home);
       }
     } catch (e) {
@@ -295,15 +301,13 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   void _showForgotPasswordDialog() {
-    final _emailCtrl = TextEditingController(
-      text: _emailController.text.trim(),
-    );
+    final emailCtrl = TextEditingController(text: _emailController.text.trim());
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Restablecer contraseña'),
         content: TextField(
-          controller: _emailCtrl,
+          controller: emailCtrl,
           decoration: const InputDecoration(labelText: 'Email'),
         ),
         actions: [
@@ -313,7 +317,7 @@ class _LoginScreenState extends State<LoginScreen>
           ),
           TextButton(
             onPressed: () async {
-              final email = _emailCtrl.text.trim();
+              final email = emailCtrl.text.trim();
               if (email.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Introduce tu email')),

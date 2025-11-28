@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:truekapp/dto/trade/trade_status.dart';
 
@@ -37,7 +36,7 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
 
   void _initData() {
     if (_tradeId == null) return;
-    
+
     // Carga inicial
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fetchMessages();
@@ -51,8 +50,10 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
 
   Future<void> _fetchMessages() async {
     if (_tradeId == null) return;
-    await Provider.of<TradeProvider>(context, listen: false)
-        .fetchMessages(_tradeId!);
+    await Provider.of<TradeProvider>(
+      context,
+      listen: false,
+    ).fetchMessages(_tradeId!);
   }
 
   @override
@@ -69,13 +70,16 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
 
     _messageController.clear();
     try {
-      await Provider.of<TradeProvider>(context, listen: false)
-          .sendMessageAndRefresh(_tradeId!, text);
-      
+      await Provider.of<TradeProvider>(
+        context,
+        listen: false,
+      ).sendMessageAndRefresh(_tradeId!, text);
+
       // Scroll al fondo
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent + 60, // un poco extra por si acaso
+          _scrollController.position.maxScrollExtent +
+              60, // un poco extra por si acaso
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
         );
@@ -83,7 +87,10 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error al enviar: $e"), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text("Error al enviar: $e"),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -100,7 +107,7 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
           "1. El producto se marcará como VENDIDO.\n"
           "2. Esta conversación se cerrará.\n"
           "3. El comprador podrá calificarte.\n\n"
-          "¿Confirmas que el intercambio fue exitoso?"
+          "¿Confirmas que el intercambio fue exitoso?",
         ),
         actions: [
           TextButton(
@@ -111,9 +118,11 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
             onPressed: () async {
               Navigator.pop(ctx); // Cierra diálogo
               try {
-                await Provider.of<TradeProvider>(context, listen: false)
-                    .completeTrade(tradeId);
-                
+                await Provider.of<TradeProvider>(
+                  context,
+                  listen: false,
+                ).completeTrade(tradeId);
+
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -125,12 +134,21 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
               } catch (e) {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+                    SnackBar(
+                      content: Text("Error: $e"),
+                      backgroundColor: Colors.red,
+                    ),
                   );
                 }
               }
             },
-            child: const Text("Sí, Finalizar", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+            child: const Text(
+              "Sí, Finalizar",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.green,
+              ),
+            ),
           ),
         ],
       ),
@@ -149,15 +167,16 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
 
     // Buscamos el Trade actual en la lista del provider para tener el estado REACTIVO
     // Si no está (raro), usamos null safe
-    final TradeDto? currentTrade = tradeProvider.myTrades.cast<TradeDto?>().firstWhere(
-          (t) => t?.id == _tradeId,
-          orElse: () => null,
-        );
+    final TradeDto? currentTrade = tradeProvider.myTrades
+        .cast<TradeDto?>()
+        .firstWhere((t) => t?.id == _tradeId, orElse: () => null);
 
     if (currentTrade == null) {
       return Scaffold(
         appBar: AppBar(title: const Text("Chat")),
-        body: const Center(child: Text("No se encontró la información del trueque.")),
+        body: const Center(
+          child: Text("No se encontró la información del trueque."),
+        ),
       );
     }
 
@@ -165,9 +184,9 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
     // ownerUserId = Vendedor (Dueño del producto publicado)
     // requesterUserId = Comprador (Quien inició el trueque)
     // NOTA: Usamos los campos nuevos que mapeamos en el DTO para evitar confusión
-    final isSeller = currentUser.id == currentTrade.listingOwnerId; 
+    final isSeller = currentUser.id == currentTrade.listingOwnerId;
     final isBuyer = currentUser.id == currentTrade.initiatorUserId;
-    
+
     final isCompleted = currentTrade.status == TradeStatus.Completed;
     final isCancelled = currentTrade.status == TradeStatus.Cancelled;
 
@@ -176,9 +195,14 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(isSeller ? "Mi Venta" : "Mi Compra", style: const TextStyle(fontSize: 16)),
             Text(
-              isCompleted ? "Finalizado" : (isCancelled ? "Cancelado" : "En proceso"),
+              isSeller ? "Mi Venta" : "Mi Compra",
+              style: const TextStyle(fontSize: 16),
+            ),
+            Text(
+              isCompleted
+                  ? "Finalizado"
+                  : (isCancelled ? "Cancelado" : "En proceso"),
               style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w300),
             ),
           ],
@@ -191,7 +215,8 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
               icon: const Icon(Icons.check_circle_outline, size: 28),
               color: Colors.green,
               tooltip: "Marcar como Finalizado",
-              onPressed: () => _showCompleteConfirmation(context, currentTrade.id),
+              onPressed: () =>
+                  _showCompleteConfirmation(context, currentTrade.id),
             ),
         ],
       ),
@@ -212,21 +237,30 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                       SizedBox(width: 8),
                       Text(
                         "¡Trueque Completado!",
-                        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 16),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green,
+                          fontSize: 16,
+                        ),
                       ),
                     ],
                   ),
-                  
+
                   // Botón para el Comprador: Calificar
                   if (isBuyer) ...[
                     const SizedBox(height: 8),
                     ElevatedButton.icon(
-                      icon: const Icon(Icons.star_rate_rounded, color: Colors.white),
+                      icon: const Icon(
+                        Icons.star_rate_rounded,
+                        color: Colors.white,
+                      ),
                       label: const Text("Calificar Vendedor"),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.amber,
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
                       ),
                       onPressed: () {
                         showDialog(
@@ -234,34 +268,43 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                           builder: (_) => RateUserDialog(
                             toUserId: currentTrade.listingOwnerId,
                             tradeId: currentTrade.id,
-                            userName: "Vendedor", // Podrías pasar el nombre real si lo agregas al DTO
+                            userName:
+                                "Vendedor", // Podrías pasar el nombre real si lo agregas al DTO
                           ),
                         );
                       },
                     ),
                   ] else ...[
-                     const SizedBox(height: 4),
-                     const Text("Gracias por usar TruekApp.", style: TextStyle(fontSize: 12, color: Colors.grey))
-                  ]
+                    const SizedBox(height: 4),
+                    const Text(
+                      "Gracias por usar TruekApp.",
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
                 ],
               ),
             ),
-          
+
           // --- BANNER DE CANCELADO ---
           if (isCancelled)
-             Container(
+            Container(
               width: double.infinity,
               color: Colors.red.shade50,
               padding: const EdgeInsets.all(12),
-              child: const Center(child: Text("Este trueque ha sido cancelado.", style: TextStyle(color: Colors.red))),
-             ),
+              child: const Center(
+                child: Text(
+                  "Este trueque ha sido cancelado.",
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+            ),
 
           // --- LISTA DE MENSAJES ---
           Expanded(
             child: Consumer<TradeProvider>(
               builder: (context, provider, child) {
                 final messages = provider.getMessagesForTrade(_tradeId!);
-                
+
                 if (provider.isLoadingMessages && messages.isEmpty) {
                   return const Center(child: CircularProgressIndicator());
                 }
@@ -301,7 +344,7 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                     color: Colors.black.withOpacity(0.05),
                     offset: const Offset(0, -2),
                     blurRadius: 5,
-                  )
+                  ),
                 ],
               ),
               child: SafeArea(
@@ -312,7 +355,10 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                         controller: _messageController,
                         decoration: InputDecoration(
                           hintText: "Escribe un mensaje...",
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 10,
+                          ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(24),
                             borderSide: BorderSide.none,
@@ -327,7 +373,11 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                     CircleAvatar(
                       backgroundColor: AppColors.primary,
                       child: IconButton(
-                        icon: const Icon(Icons.send, color: Colors.white, size: 20),
+                        icon: const Icon(
+                          Icons.send,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                         onPressed: _sendMessage,
                       ),
                     ),
@@ -360,9 +410,13 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (!isMe) ...[
-               Text(
+              Text(
                 msg.senderUserName ?? "Usuario",
-                style: TextStyle(fontSize: 10, color: Colors.grey[600], fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 2),
             ],
