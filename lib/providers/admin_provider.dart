@@ -36,6 +36,13 @@ class AdminProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   List<ActiveUserSummary> get activeUsers => List.unmodifiable(_activeUsers);
 
+  /// Devuelve las publicaciones completas cargadas en memoria filtradas por ownerUserId
+  List<ListingDto> getListingsForUser(int userId) {
+    return List.unmodifiable(
+      _listings.where((l) => l.ownerUserId == userId).toList(),
+    );
+  }
+
   // New getters for metrics
   int get totalListings => _totalListings;
   int get activeListingsCount => _activeListingsCount;
@@ -69,8 +76,14 @@ class AdminProvider with ChangeNotifier {
   }
 
   // Top lists
-  List<ActiveUserSummary> get topUsersByListings => List.unmodifiable(List.from(_activeUsers)..sort((a,b) => b.listingCount.compareTo(a.listingCount)));
-  List<ActiveUserSummary> get topUsersByRating => List.unmodifiable(List.from(_activeUsers)..sort((a,b) => b.averageRating.compareTo(a.averageRating)));
+  List<ActiveUserSummary> get topUsersByListings => List.unmodifiable(
+    List.from(_activeUsers)
+      ..sort((a, b) => b.listingCount.compareTo(a.listingCount)),
+  );
+  List<ActiveUserSummary> get topUsersByRating => List.unmodifiable(
+    List.from(_activeUsers)
+      ..sort((a, b) => b.averageRating.compareTo(a.averageRating)),
+  );
 
   // Statistics
   double get averageRating {
@@ -80,7 +93,8 @@ class AdminProvider with ChangeNotifier {
     return sum / rated.length;
   }
 
-  int get usersWithRating => _activeUsers.where((u) => u.averageRating > 0).length;
+  int get usersWithRating =>
+      _activeUsers.where((u) => u.averageRating > 0).length;
 
   /// Distribution keyed by stars 1..5
   Map<int, int> get ratingDistribution {
@@ -120,14 +134,17 @@ class AdminProvider with ChangeNotifier {
         final displayName = list.first.ownerName ?? 'Usuario $userId';
         final avatar = list.first.ownerAvatarUrl;
         // average ownerRating across this user's listings (ownerRating may be repeated)
-        final average = list.fold<double>(0.0, (p, e) => p + (e.ownerRating)) / list.length;
-        summaries.add(ActiveUserSummary(
-          userId: userId,
-          displayName: displayName,
-          avatarUrl: avatar,
-          averageRating: double.parse(average.toStringAsFixed(2)),
-          listingCount: list.length,
-        ));
+        final average =
+            list.fold<double>(0.0, (p, e) => p + (e.ownerRating)) / list.length;
+        summaries.add(
+          ActiveUserSummary(
+            userId: userId,
+            displayName: displayName,
+            avatarUrl: avatar,
+            averageRating: double.parse(average.toStringAsFixed(2)),
+            listingCount: list.length,
+          ),
+        );
 
         // aggregate counts
         totalListingsLocal += list.length;
@@ -152,9 +169,15 @@ class AdminProvider with ChangeNotifier {
       _totalListings = totalListingsLocal;
       _activeListingsCount = activeListingsLocal;
       _uniqueUsersCount = _activeUsers.length;
-      _totalTrueCoinsActive = double.parse(totalTrueCoinsActiveLocal.toStringAsFixed(2));
+      _totalTrueCoinsActive = double.parse(
+        totalTrueCoinsActiveLocal.toStringAsFixed(2),
+      );
       _avgTrueCoinsPerListing = activeListingsLocal > 0
-          ? double.parse((totalTrueCoinsActiveLocal / activeListingsLocal).toStringAsFixed(2))
+          ? double.parse(
+              (totalTrueCoinsActiveLocal / activeListingsLocal).toStringAsFixed(
+                2,
+              ),
+            )
           : 0.0;
     } finally {
       _isLoading = false;

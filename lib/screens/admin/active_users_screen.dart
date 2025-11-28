@@ -24,7 +24,31 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Usuarios activos y calificaciones')),
+      appBar: AppBar(
+        title: const Text('Usuarios activos y calificaciones'),
+        actions: [
+          Tooltip(
+            message: 'Volver al inicio',
+            child: IconButton(
+              icon: const Icon(Icons.home_outlined),
+              onPressed: () =>
+                  Navigator.pushReplacementNamed(context, AppRoutes.home),
+            ),
+          ),
+          Tooltip(
+            message: 'Cerrar sesión',
+            child: Consumer<AuthProvider>(
+              builder: (context, auth, child) => IconButton(
+                icon: const Icon(Icons.logout),
+                onPressed: () {
+                  auth.logout();
+                  Navigator.pushReplacementNamed(context, AppRoutes.login);
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
       body: Consumer2<AuthProvider, AdminProvider>(
         builder: (context, auth, provider, child) {
           // If auth user not loaded yet, show loader
@@ -295,6 +319,13 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
                                   subtitle: Text(
                                     'Publicaciones: ${u.listingCount}',
                                   ),
+                                  onTap: () {
+                                    Navigator.pushNamed(
+                                      context,
+                                      AppRoutes.adminUserDetail,
+                                      arguments: u.userId,
+                                    );
+                                  },
                                 ),
                               )
                               .toList(),

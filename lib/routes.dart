@@ -29,6 +29,7 @@ class AppRoutes {
   // Nueva ruta constante
   static const String profile = '/profile';
   static const String adminActiveUsers = '/admin/active-users';
+  static const String adminUserDetail = '/admin/user-detail';
 
   static Map<String, WidgetBuilder> routes = {
     login: (_) => const LoginScreen(),
@@ -45,5 +46,8 @@ class AppRoutes {
     // Registramos la pantalla de perfil aquí
     profile: (_) => const ProfileScreen(),
     adminActiveUsers: (_) => const ActiveUsersScreen(),
+    adminUserDetail: (_) => const Scaffold(
+      body: SizedBox(),
+    ), // placeholder, screen will be registered after creation
   };
 }
