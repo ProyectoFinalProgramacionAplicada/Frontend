@@ -41,8 +41,13 @@ class AppRoutes {
     tradeDetail: (_) => const TradeDetailScreen(),
     '/debug-token': (_) => const TokenDebugScreen(),
     listingDetail: (_) => const ListingDetailScreen(),
-    wallet: (_) => const WalletScreen(),
 
+    wallet: (context) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      final operation = args is WalletOperationType ? args : WalletOperationType.deposit;
+      return WalletScreen(operationType: operation);
+    },
+    
     // Registramos la pantalla de perfil aquí
     profile: (_) => const ProfileScreen(),
     adminActiveUsers: (_) => const ActiveUsersScreen(),

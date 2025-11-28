@@ -12,6 +12,8 @@ import 'providers/market_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/admin_provider.dart';
 import 'dto/auth/app_role.dart';
+import 'providers/p2p_order_provider.dart';
+import 'services/api_client.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,6 +41,7 @@ class TruekApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => MarketProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
           ChangeNotifierProvider(create: (_) => AdminProvider()),
+        ChangeNotifierProvider(create: (_) => P2POrderProvider(ApiClient().dio)),
       ],
       child: Sizer(
         builder: (context, orientation, deviceType) {
