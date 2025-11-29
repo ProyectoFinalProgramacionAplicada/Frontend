@@ -22,19 +22,29 @@ class AuthProvider extends ChangeNotifier {
     isLoading = true;
     notifyListeners();
     try {
-      final tokenDto = await _service.login(
-        UserLoginDto(email: email, password: password),
-      );
+      final tokenDto = await _service
+          .login(UserLoginDto(email: email, password: password))
+          .timeout(
+            const Duration(seconds: 3),
+            onTimeout: () => throw Exception(
+              'La conexión tardó demasiado. Intentá de nuevo.',
+            ),
+          );
 
       if (tokenDto.token == null) throw Exception("Token inválido");
 
       ApiClient().setToken(tokenDto.token!);
-      
+
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('auth_token', tokenDto.token!);
 
       try {
-        user = await _service.getMe();
+        user = await _service.getMe().timeout(
+          const Duration(seconds: 3),
+          onTimeout: () => throw Exception(
+            'No se pudo obtener tu perfil. Intentá de nuevo.',
+          ),
+        );
       } catch (e) {
         // If fetching user fails (e.g. token invalid), clear saved token and state
         ApiClient().clearToken();
@@ -87,7 +97,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       await _service.updateProfile(dto);
       // Refrescamos los datos del usuario localmente
-      user = await _service.getMe(); 
+      user = await _service.getMe();
     } catch (e) {
       rethrow;
     } finally {

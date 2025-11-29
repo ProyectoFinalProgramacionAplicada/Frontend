@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/admin_provider.dart';
 import '../../dto/listing/listing_dto.dart';
-import '../../providers/auth_provider.dart';
 import '../../services/review_service.dart';
 import '../../dto/review/user_review_dto.dart';
 import '../../services/wallet_service.dart';
 import '../../dto/wallet/wallet_adjust_request.dart';
 
 class UserDetailScreen extends StatefulWidget {
-  const UserDetailScreen({Key? key}) : super(key: key);
+  const UserDetailScreen({super.key});
 
   @override
   State<UserDetailScreen> createState() => _UserDetailScreenState();
@@ -52,10 +51,11 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
     } catch (e) {
       _reviews = [];
       // ignore error but show message
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error cargando reseñas: $e')));
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -80,17 +80,19 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
         reason: reason.isEmpty ? null : reason,
       );
       await _walletService.adjustBalance(req);
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Ajuste aplicado')));
+      }
       _amountController.clear();
       _reasonController.clear();
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error al ajustar: $e')));
+      }
     } finally {
       if (mounted) setState(() => _isAdjusting = false);
     }

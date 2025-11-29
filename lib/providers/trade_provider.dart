@@ -40,8 +40,9 @@ class TradeProvider extends ChangeNotifier {
 
   // --- Helpers ---
   Future<String?> fetchListingTitle(int listingId) async {
-    if (_listingTitleCache.containsKey(listingId))
+    if (_listingTitleCache.containsKey(listingId)) {
       return _listingTitleCache[listingId];
+    }
     try {
       final listing = await ListingService().getListingById(listingId);
       final title = listing.title.isNotEmpty
@@ -83,8 +84,9 @@ class TradeProvider extends ChangeNotifier {
   }
 
   Future<void> createTrade(TradeCreateDto dto) async {
-    if (_pendingCreates.contains(dto.targetListingId))
+    if (_pendingCreates.contains(dto.targetListingId)) {
       throw Exception('Oferta en proceso.');
+    }
     _pendingCreates.add(dto.targetListingId);
     notifyListeners();
     try {
@@ -153,8 +155,9 @@ class TradeProvider extends ChangeNotifier {
     double? requestedTrueCoins,
     String? message,
   }) async {
-    if (_pendingCounterOffers.contains(tradeId))
+    if (_pendingCounterOffers.contains(tradeId)) {
       throw Exception('Contraoferta en proceso...');
+    }
     _pendingCounterOffers.add(tradeId);
     notifyListeners();
 

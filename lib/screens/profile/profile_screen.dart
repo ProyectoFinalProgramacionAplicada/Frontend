@@ -5,6 +5,7 @@ import '../../dto/auth/user_update_dto.dart';
 import '../../dto/listing/listing_dto.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/listing_provider.dart';
+import '../../widgets/phone_input_field.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -75,26 +76,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
     String? currentPhone,
   ) {
     final nameController = TextEditingController(text: currentName);
-    final phoneController = TextEditingController(text: currentPhone);
+    String phoneValue = currentPhone ?? '';
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text("Editar Perfil"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(labelText: "Nombre Completo"),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: phoneController,
-              decoration: const InputDecoration(labelText: "Teléfono"),
-              keyboardType: TextInputType.phone,
-            ),
-          ],
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(labelText: "Nombre Completo"),
+              ),
+              const SizedBox(height: 16),
+              PhoneInputField(
+                label: 'Teléfono',
+                initialValue: currentPhone,
+                onChanged: (phone) {
+                  phoneValue = phone;
+                },
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -111,7 +116,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ).updateProfile(
                   UserUpdateDto(
                     displayName: nameController.text.trim(),
-                    phone: phoneController.text.trim(),
+                    phone: phoneValue.isEmpty ? null : phoneValue,
                   ),
                 );
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -204,8 +209,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.currentUser;
 
-    if (user == null)
+    if (user == null) {
       return const Scaffold(body: Center(child: Text("Sin sesión")));
+    }
 
     final fullAvatarUrl = user.avatarUrl != null
         ? '${AppConstants.apiBaseUrl}${user.avatarUrl}'

@@ -13,6 +13,8 @@ class CustomInput extends StatefulWidget {
   final bool isEmail;
   final String? Function(String?)? validator;
   final void Function(String)? onChanged;
+  final void Function(String)? onFieldSubmitted;
+  final TextInputAction? textInputAction;
   final IconData? prefixIcon;
   final Widget? suffixIcon;
   final int maxLines;
@@ -28,6 +30,8 @@ class CustomInput extends StatefulWidget {
     this.isEmail = false,
     this.validator,
     this.onChanged,
+    this.onFieldSubmitted,
+    this.textInputAction,
     this.prefixIcon,
     this.suffixIcon,
     this.maxLines = 1,
@@ -107,7 +111,8 @@ class _CustomInputState extends State<CustomInput>
                 maxLines: widget.isPassword ? 1 : widget.maxLines,
                 validator: widget.validator,
                 onChanged: widget.onChanged,
-                textInputAction: TextInputAction.next,
+                onFieldSubmitted: widget.onFieldSubmitted,
+                textInputAction: widget.textInputAction ?? TextInputAction.next,
                 style: GoogleFonts.inter(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,

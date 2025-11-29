@@ -13,7 +13,7 @@ import '../screens/trade/trade_chat_screen.dart';
 
 class TradeCard extends StatelessWidget {
   final TradeDto trade;
-  const TradeCard({Key? key, required this.trade}) : super(key: key);
+  const TradeCard({super.key, required this.trade});
 
   @override
   Widget build(BuildContext context) {
@@ -206,7 +206,7 @@ class TradeCard extends StatelessWidget {
                           .getListingsByOwner(me.id);
                       final Map<int, ListingDto> byMyId = {};
                       for (final l in rawMyListings) {
-                        if (l.id != null) byMyId[l.id] = l;
+                        byMyId[l.id] = l;
                       }
                       final myListings = byMyId.values.toList();
 
@@ -218,7 +218,7 @@ class TradeCard extends StatelessWidget {
                           .getListingsByOwner(opponentId);
                       final Map<int, ListingDto> byOppId = {};
                       for (final l in rawOpponentListings) {
-                        if (l.id != null) byOppId[l.id] = l;
+                        byOppId[l.id] = l;
                       }
                       final opponentListings = byOppId.values.toList();
 
@@ -281,10 +281,11 @@ class TradeCard extends StatelessWidget {
                             );
                           }
                         } catch (e) {
-                          if (context.mounted)
+                          if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(content: Text('Error: $e')),
                             );
+                          }
                         }
                       }
                     },
@@ -300,21 +301,23 @@ class TradeCard extends StatelessWidget {
                       onPressed: () async {
                         try {
                           await tradeProvider.acceptTrade(trade.id);
-                          if (context.mounted)
+                          if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Oferta aceptada'),
                                 backgroundColor: Colors.green,
                               ),
                             );
+                          }
                         } catch (e) {
-                          if (context.mounted)
+                          if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text('Error: $e'),
                                 backgroundColor: Colors.red,
                               ),
                             );
+                          }
                         }
                       },
                     ),
@@ -331,21 +334,23 @@ class TradeCard extends StatelessWidget {
                             trade.id,
                             TradeUpdateStatusDto(status: TradeStatus.Cancelled),
                           );
-                          if (context.mounted)
+                          if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Oferta rechazada'),
                                 backgroundColor: Colors.red,
                               ),
                             );
+                          }
                         } catch (e) {
-                          if (context.mounted)
+                          if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text('Error: $e'),
                                 backgroundColor: Colors.red,
                               ),
                             );
+                          }
                         }
                       },
                     ),

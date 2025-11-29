@@ -1,6 +1,5 @@
 // lib/screens/trade/trade_create_screen.dart
 
-import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/trade_provider.dart';
 import '../../providers/listing_provider.dart';
@@ -14,8 +13,7 @@ class TradeCreateScreen extends StatefulWidget {
   final int? targetListingId;
   final String? targetTitle;
 
-  const TradeCreateScreen({Key? key, this.targetListingId, this.targetTitle})
-    : super(key: key);
+  const TradeCreateScreen({super.key, this.targetListingId, this.targetTitle});
 
   @override
   State<TradeCreateScreen> createState() => _TradeCreateScreenState();

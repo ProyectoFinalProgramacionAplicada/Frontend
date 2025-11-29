@@ -5,7 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../../widgets/trade_card.dart';
 
 class TradeListScreen extends StatefulWidget {
-  const TradeListScreen({Key? key}) : super(key: key);
+  const TradeListScreen({super.key});
 
   @override
   State<TradeListScreen> createState() => _TradeListScreenState();

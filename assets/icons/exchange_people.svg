@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none" stroke="#2F6B3F" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Left Person -->
+  <circle cx="45" cy="55" r="18"/>
+  <path d="M45 73 L45 120"/>
+  <path d="M45 85 L25 105"/>
+  <path d="M45 85 L65 105"/>
+  <path d="M45 120 L30 150"/>
+  <path d="M45 120 L60 150"/>
+  
+  <!-- Right Person -->
+  <circle cx="155" cy="55" r="18"/>
+  <path d="M155 73 L155 120"/>
+  <path d="M155 85 L135 105"/>
+  <path d="M155 85 L175 105"/>
+  <path d="M155 120 L140 150"/>
+  <path d="M155 120 L170 150"/>
+  
+  <!-- Exchange Arrows -->
+  <path d="M75 90 L125 90"/>
+  <path d="M115 80 L125 90 L115 100"/>
+  <path d="M125 110 L75 110"/>
+  <path d="M85 100 L75 110 L85 120"/>
+</svg>
