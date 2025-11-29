@@ -271,6 +271,8 @@ class TradeCard extends StatelessWidget {
                             requestedTrueCoins:
                                 result['requestedTrueCoins'] as double?,
                             message: message,
+                            requestedOtherListingId:
+                                result['requestedOtherListingId'] as int?,
                           );
 
                           if (context.mounted) {

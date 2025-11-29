@@ -3,6 +3,7 @@ class TradeUpdateDto {
   final int? offeredListingId;
   final int? targetListingId;
   final String? message;
+  final int? requestedOtherListingId;
   final double? offeredTrueCoins;
   final double? requestedTrueCoins;
 
@@ -10,6 +11,7 @@ class TradeUpdateDto {
     this.offeredListingId,
     this.targetListingId,
     this.message,
+    this.requestedOtherListingId,
     this.offeredTrueCoins,
     this.requestedTrueCoins,
   });
@@ -19,6 +21,7 @@ class TradeUpdateDto {
       offeredListingId: json['offeredListingId'],
       targetListingId: json['targetListingId'],
       message: json['message'],
+      requestedOtherListingId: json['requestedOtherListingId'],
       offeredTrueCoins: json['offeredTrueCoins'] != null
           ? (json['offeredTrueCoins'] as num).toDouble()
           : null,
@@ -32,6 +35,7 @@ class TradeUpdateDto {
     'offeredListingId': offeredListingId,
     'targetListingId': targetListingId,
     'message': message,
+    'requestedOtherListingId': requestedOtherListingId,
     'offeredTrueCoins': offeredTrueCoins,
     'requestedTrueCoins': requestedTrueCoins,
   };
