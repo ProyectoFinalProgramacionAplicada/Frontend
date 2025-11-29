@@ -152,6 +152,7 @@ class TradeProvider extends ChangeNotifier {
     double? offeredTrueCoins,
     double? requestedTrueCoins,
     String? message,
+    int? requestedOtherListingId,
   }) async {
     if (_pendingCounterOffers.contains(tradeId))
       throw Exception('Contraoferta en proceso...');
@@ -164,6 +165,7 @@ class TradeProvider extends ChangeNotifier {
         offeredTrueCoins: offeredTrueCoins,
         requestedTrueCoins: requestedTrueCoins,
         message: message,
+        requestedOtherListingId: requestedOtherListingId,
       );
       await _service.updateTrade(tradeId, dto);
       await fetchMyTrades();
