@@ -2,10 +2,10 @@
 
 class TradeMessageDto {
   final int? id;
-  final int? senderUserId;    // Antes fromUserId
+  final int? senderUserId; // Antes fromUserId
   final String? senderUserName; // NUEVO: Para mostrar el nombre en el chat
   final int? tradeId;
-  final String? text;         // Antes message
+  final String? text; // Antes message
   final DateTime? createdAt;
 
   TradeMessageDto({
@@ -18,7 +18,6 @@ class TradeMessageDto {
   });
 
   factory TradeMessageDto.fromJson(Map<String, dynamic> json) {
-    
     // Helper para parsear enteros seguros
     int? parseInt(dynamic v) {
       if (v == null) return null;
@@ -39,18 +38,21 @@ class TradeMessageDto {
 
     return TradeMessageDto(
       id: parseInt(json['id']),
-      
+
       // Mapeamos 'senderUserId' (o fallbacks antiguos 'fromUserId')
       senderUserId: parseInt(json['senderUserId'] ?? json['fromUserId']),
-      
-      // Mapeamos 'senderUserName' (o fallbacks)
-      senderUserName: json['senderUserName']?.toString() ?? json['senderName']?.toString(),
-      
+
+      // Mapeamos displayName con fallbacks
+      senderUserName:
+          json['senderDisplayName']?.toString() ??
+          json['senderUserName']?.toString() ??
+          json['senderName']?.toString(),
+
       tradeId: parseInt(json['tradeId']),
-      
+
       // Mapeamos 'text' (o fallbacks 'message')
       text: json['text']?.toString() ?? json['message']?.toString() ?? '',
-      
+
       createdAt: parseDate(json['createdAt'] ?? json['created_at']),
     );
   }
