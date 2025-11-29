@@ -7,12 +7,13 @@ class ListingDto {
   final double latitude;
   final double longitude;
   final String? description;
-  
-  // Datos del Vendedor
+
+  // Datos del Vendedor (displayName del backend)
   final int ownerUserId;
-  final String? ownerName;
-  final String? ownerAvatarUrl; // <--- Nuevo
-  final double ownerRating;     // <--- Nuevo
+  final String? ownerName; // displayName del vendedor
+  final String? ownerAvatarUrl;
+  final String? ownerPhone; // Teléfono E.164 del vendedor
+  final double ownerRating;
 
   ListingDto({
     required this.id,
@@ -26,6 +27,7 @@ class ListingDto {
     required this.ownerUserId,
     this.ownerName,
     this.ownerAvatarUrl,
+    this.ownerPhone,
     this.ownerRating = 0.0,
   });
 
@@ -39,16 +41,16 @@ class ListingDto {
       latitude: (json['latitude'] as num).toDouble(),
       longitude: (json['longitude'] as num).toDouble(),
       description: json['description'],
-      
-      // Mapeo robusto del vendedor
+
+      // Mapeo robusto del vendedor - acepta displayName o name
       ownerUserId: json['ownerUserId'],
-      ownerName: json['ownerName'],
-      ownerAvatarUrl: json['ownerAvatarUrl'], 
+      ownerName: json['ownerDisplayName'] ?? json['ownerName'],
+      ownerAvatarUrl: json['ownerAvatarUrl'],
+      ownerPhone: json['ownerPhone'],
       ownerRating: (json['ownerRating'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
-  // Si usas toJson en algún lado, actualízalo también
   Map<String, dynamic> toJson() => {
     'id': id,
     'title': title,
@@ -61,6 +63,7 @@ class ListingDto {
     'ownerUserId': ownerUserId,
     'ownerName': ownerName,
     'ownerAvatarUrl': ownerAvatarUrl,
+    'ownerPhone': ownerPhone,
     'ownerRating': ownerRating,
   };
 }

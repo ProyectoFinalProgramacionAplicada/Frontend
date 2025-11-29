@@ -5,7 +5,7 @@ class UserReviewDto {
   final int rating;
   final String? comment;
   final DateTime createdAt;
-  
+
   // Nuevos campos
   final String? fromUserName;
   final String? fromUserAvatarUrl;
@@ -29,7 +29,8 @@ class UserReviewDto {
       rating: json['rating'],
       comment: json['comment'],
       createdAt: DateTime.parse(json['createdAt']),
-      fromUserName: json['fromUserName'],
+      // Acepta displayName o name del backend
+      fromUserName: json['fromUserDisplayName'] ?? json['fromUserName'],
       fromUserAvatarUrl: json['fromUserAvatarUrl'],
     );
   }

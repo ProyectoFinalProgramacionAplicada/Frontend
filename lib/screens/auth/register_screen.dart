@@ -75,7 +75,7 @@ class _RegisterScreenState extends State<RegisterScreen>
       final auth = Provider.of<AuthProvider>(context, listen: false);
       await auth.register(
         UserRegisterDto(
-          name: _nameController.text.trim(),
+          displayName: _nameController.text.trim(),
           email: _emailController.text.trim(),
           password: _passwordController.text,
           phone: _phoneNumber.isEmpty ? null : _phoneNumber,
@@ -201,7 +201,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                               ),
                               SizedBox(height: 3.h),
 
-                              // Nombre Completo
+                              // Nombre Completo (displayName)
                               _buildInputField(
                                 controller: _nameController,
                                 label: 'Nombre Completo',
@@ -212,9 +212,17 @@ class _RegisterScreenState extends State<RegisterScreen>
                                   if (v == null || v.trim().isEmpty) {
                                     return 'El nombre es requerido';
                                   }
+                                  if (v.trim().length < 2) {
+                                    return 'Mínimo 2 caracteres';
+                                  }
+                                  if (v.trim().length > 100) {
+                                    return 'Máximo 100 caracteres';
+                                  }
                                   return null;
                                 },
-                                fieldError: _fieldErrors['name'],
+                                fieldError:
+                                    _fieldErrors['displayName'] ??
+                                    _fieldErrors['name'],
                               ),
                               SizedBox(height: 2.h),
 

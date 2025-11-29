@@ -1,7 +1,7 @@
 import 'app_role.dart';
 
 class UserRegisterDto {
-  final String? name;
+  final String? displayName;
   final String? email;
   final String? password;
   final String? phone;
@@ -9,7 +9,7 @@ class UserRegisterDto {
   final int? companyId;
 
   UserRegisterDto({
-    this.name,
+    this.displayName,
     this.email,
     this.password,
     this.phone,
@@ -19,21 +19,39 @@ class UserRegisterDto {
 
   factory UserRegisterDto.fromJson(Map<String, dynamic> json) {
     return UserRegisterDto(
-      name: json['name'],
+      displayName: json['displayName'] ?? json['name'],
       email: json['email'],
       password: json['password'],
       phone: json['phone'],
-      role: AppRole.values[json['role']],
+      role: AppRole.values[json['role'] ?? 0],
       companyId: json['companyId'],
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'name': name,
+    'displayName': displayName,
     'email': email,
     'password': password,
-    'phone': phone,
+    if (phone != null && phone!.isNotEmpty) 'phone': phone,
     'role': role.index,
-    'companyId': companyId,
+    if (companyId != null) 'companyId': companyId,
   };
+
+  UserRegisterDto copyWith({
+    String? displayName,
+    String? email,
+    String? password,
+    String? phone,
+    AppRole? role,
+    int? companyId,
+  }) {
+    return UserRegisterDto(
+      displayName: displayName ?? this.displayName,
+      email: email ?? this.email,
+      password: password ?? this.password,
+      phone: phone ?? this.phone,
+      role: role ?? this.role,
+      companyId: companyId ?? this.companyId,
+    );
+  }
 }
