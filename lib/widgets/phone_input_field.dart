@@ -3,15 +3,13 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import '../core/constants/app_colors.dart';
 
-/// Widget de input de teléfono con selector de país para TruekApp.
-/// Usa intl_phone_number_input internamente.
-/// Mantiene la estética consistente con los demás inputs de la app.
 class PhoneInputField extends StatefulWidget {
   final String label;
   final String? initialValue;
   final void Function(String phoneNumber)? onChanged;
   final void Function(bool isValid)? onValidChanged;
   final String? errorText;
+  final String initialCountryCode;
 
   const PhoneInputField({
     super.key,
@@ -20,6 +18,7 @@ class PhoneInputField extends StatefulWidget {
     this.onChanged,
     this.onValidChanged,
     this.errorText,
+    this.initialCountryCode = 'BO', // Bolivia por defecto
   });
 
   @override
@@ -28,33 +27,49 @@ class PhoneInputField extends StatefulWidget {
 
 class _PhoneInputFieldState extends State<PhoneInputField> {
   final TextEditingController _controller = TextEditingController();
-  PhoneNumber _phoneNumber = PhoneNumber(isoCode: 'BO'); // Bolivia default
-  bool _isValid = false;
+
+  // Estado del país seleccionado - se mantiene aunque el widget se reconstruya
+  late PhoneNumber _phoneNumber;
+  bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
+    // Inicializar con el país por defecto
+    _phoneNumber = PhoneNumber(isoCode: widget.initialCountryCode);
     _initializePhone();
   }
 
   Future<void> _initializePhone() async {
     if (widget.initialValue != null && widget.initialValue!.isNotEmpty) {
       try {
+        // Parsear el número inicial para extraer país y número
         final parsed = await PhoneNumber.getRegionInfoFromPhoneNumber(
           widget.initialValue!,
         );
         if (mounted) {
           setState(() {
             _phoneNumber = parsed;
-            _controller.text =
-                parsed.phoneNumber?.replaceFirst('+${parsed.dialCode}', '') ??
-                '';
+            // Extraer solo el número sin el código de país
+            final dialCode = parsed.dialCode ?? '';
+            final fullNumber = parsed.phoneNumber ?? '';
+            _controller.text = fullNumber
+                .replaceFirst('+$dialCode', '')
+                .replaceFirst(dialCode, '');
+            _isInitialized = true;
           });
         }
       } catch (_) {
-        // If parsing fails, just use the raw value
-        _controller.text = widget.initialValue!.replaceFirst('+591', '');
+        // Si falla el parseo, usar el valor raw limpiando +591 si existe
+        if (mounted) {
+          _controller.text = widget.initialValue!
+              .replaceFirst('+591', '')
+              .replaceFirst('591', '');
+          setState(() => _isInitialized = true);
+        }
       }
+    } else {
+      setState(() => _isInitialized = true);
     }
   }
 
@@ -64,8 +79,55 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
     super.dispose();
   }
 
+  /// Construye el número completo en formato E.164
+  /// Ejemplo: "+591" + "77310481" = "+59177310481"
+  String _buildFullPhoneNumber() {
+    final dialCode = _phoneNumber.dialCode ?? '+591';
+    final number = _controller.text.replaceAll(
+      RegExp(r'\D'),
+      '',
+    ); // Solo dígitos
+    if (number.isEmpty) return '';
+    return '$dialCode$number';
+  }
+
   @override
   Widget build(BuildContext context) {
+    // No renderizar hasta que esté inicializado para evitar flicker
+    if (!_isInitialized) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: Text(
+              widget.label,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.secondary,
+              ),
+            ),
+          ),
+          Container(
+            height: 52,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceLight,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.neutralLight, width: 1.5),
+            ),
+            child: const Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -95,12 +157,15 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
           ),
           child: InternationalPhoneNumberInput(
             onInputChanged: (PhoneNumber number) {
-              setState(() => _phoneNumber = number);
-              // Return the complete phone string to parent
-              widget.onChanged?.call(number.phoneNumber ?? '');
+              // Guardar el país seleccionado en el estado interno
+              // Esto evita que se resetee cuando el padre se reconstruye
+              _phoneNumber = number;
+
+              // Construir y notificar el número completo en formato E.164
+              final fullPhone = _buildFullPhoneNumber();
+              widget.onChanged?.call(fullPhone);
             },
             onInputValidated: (bool isValid) {
-              setState(() => _isValid = isValid);
               widget.onValidChanged?.call(isValid);
             },
             selectorConfig: const SelectorConfig(
@@ -122,6 +187,8 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
               fontWeight: FontWeight.w500,
               color: AppColors.secondary,
             ),
+            // IMPORTANTE: Usar el estado interno _phoneNumber
+            // que mantiene el país seleccionado por el usuario
             initialValue: _phoneNumber,
             textFieldController: _controller,
             formatInput: true,

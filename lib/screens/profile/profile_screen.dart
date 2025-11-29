@@ -6,6 +6,7 @@ import '../../dto/listing/listing_dto.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/listing_provider.dart';
 import '../../widgets/phone_input_field.dart';
+import '../../widgets/phone_display_widget.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -303,8 +304,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             Text(user.email ?? "", style: TextStyle(color: Colors.grey[600])),
+
+            // Teléfono con bandera y formato elegante
             if (user.phone != null && user.phone!.isNotEmpty)
-              Text(user.phone!, style: TextStyle(color: Colors.grey[600])),
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: PhoneDisplayWidget(phone: user.phone, compact: true),
+              ),
 
             // Botón Cambiar Contraseña
             TextButton.icon(
