@@ -11,7 +11,7 @@ import '../../dto/trade/trade_update_status_dto.dart';
 import 'trade_chat_screen.dart';
 
 class TradeDetailScreen extends StatefulWidget {
-  const TradeDetailScreen({Key? key}) : super(key: key);
+  const TradeDetailScreen({super.key});
 
   @override
   State<TradeDetailScreen> createState() => _TradeDetailScreenState();
@@ -33,8 +33,9 @@ class _TradeDetailScreenState extends State<TradeDetailScreen> {
         // if not found, refresh and try again
         provider.fetchMyTrades().then((_) {
           final again = provider.myTrades.where((t) => t.id == args).toList();
-          if (mounted)
+          if (mounted) {
             setState(() => _trade = again.isNotEmpty ? again.first : null);
+          }
         });
       }
     }
@@ -103,8 +104,9 @@ class _TradeDetailScreenState extends State<TradeDetailScreen> {
                     final rawMyListings = await listingProvider
                         .getListingsByOwner(me.id);
                     final Map<int, ListingDto> byMyId = {};
-                    for (final l in rawMyListings)
-                      if (l.id != null) byMyId[l.id] = l;
+                    for (final l in rawMyListings) {
+                      byMyId[l.id] = l;
+                    }
                     final myListings = byMyId.values.toList();
 
                     final opponentId = (me.id == _trade!.initiatorUserId)
@@ -113,8 +115,9 @@ class _TradeDetailScreenState extends State<TradeDetailScreen> {
                     final rawOppListings = await listingProvider
                         .getListingsByOwner(opponentId);
                     final Map<int, ListingDto> byOppId = {};
-                    for (final l in rawOppListings)
-                      if (l.id != null) byOppId[l.id] = l;
+                    for (final l in rawOppListings) {
+                      byOppId[l.id] = l;
+                    }
                     final opponentListings = byOppId.values.toList();
 
                     final res = await showDialog(
@@ -164,17 +167,19 @@ class _TradeDetailScreenState extends State<TradeDetailScreen> {
                               res['requestedTrueCoins'] as double?,
                           message: message,
                         );
-                        if (mounted)
+                        if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Contraoferta enviada'),
                             ),
                           );
+                        }
                       } catch (e) {
-                        if (mounted)
+                        if (mounted) {
                           ScaffoldMessenger.of(
                             context,
                           ).showSnackBar(SnackBar(content: Text('Error: $e')));
+                        }
                       }
                     }
                   },
@@ -190,18 +195,20 @@ class _TradeDetailScreenState extends State<TradeDetailScreen> {
                     onPressed: () async {
                       try {
                         await tradeProvider.acceptTrade(_trade!.id);
-                        if (mounted)
+                        if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Oferta aceptada'),
                               backgroundColor: Colors.green,
                             ),
                           );
+                        }
                       } catch (e) {
-                        if (mounted)
+                        if (mounted) {
                           ScaffoldMessenger.of(
                             context,
                           ).showSnackBar(SnackBar(content: Text('Error: $e')));
+                        }
                       }
                     },
                   ),
@@ -218,18 +225,20 @@ class _TradeDetailScreenState extends State<TradeDetailScreen> {
                           _trade!.id,
                           TradeUpdateStatusDto(status: TradeStatus.Cancelled),
                         );
-                        if (mounted)
+                        if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Oferta rechazada'),
                               backgroundColor: Colors.red,
                             ),
                           );
+                        }
                       } catch (e) {
-                        if (mounted)
+                        if (mounted) {
                           ScaffoldMessenger.of(
                             context,
                           ).showSnackBar(SnackBar(content: Text('Error: $e')));
+                        }
                       }
                     },
                   ),

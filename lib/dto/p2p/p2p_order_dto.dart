@@ -33,7 +33,7 @@ class P2POrderDto {
   });
 
   factory P2POrderDto.fromJson(Map<String, dynamic> json) {
-    double _toDouble(dynamic value) {
+    double toDouble(dynamic value) {
       if (value is int) return value.toDouble();
       if (value is double) return value;
       if (value is num) return value.toDouble();
@@ -44,9 +44,9 @@ class P2POrderDto {
       id: json['id'] as int,
       type: json['type'] as int,
       status: json['status'] as int,
-      amountBob: _toDouble(json['amountBob']),
-      amountTrueCoins: _toDouble(json['amountTrueCoins']),
-      rate: _toDouble(json['rate']),
+      amountBob: toDouble(json['amountBob']),
+      amountTrueCoins: toDouble(json['amountTrueCoins']),
+      rate: toDouble(json['rate']),
       creatorUserId: json['creatorUserId'] as int,
       counterpartyUserId: json['counterpartyUserId'] as int?,
       paymentMethod: json['paymentMethod'] as String?,

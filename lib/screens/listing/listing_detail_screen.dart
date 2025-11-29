@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:truekapp/screens/profile/seller_profile_screen.dart';
 import '../../providers/listing_provider.dart';

@@ -1,6 +1,7 @@
 import 'app_role.dart';
 
 class UserRegisterDto {
+  final String? name;
   final String? email;
   final String? password;
   final String? phone;
@@ -8,6 +9,7 @@ class UserRegisterDto {
   final int? companyId;
 
   UserRegisterDto({
+    this.name,
     this.email,
     this.password,
     this.phone,
@@ -17,6 +19,7 @@ class UserRegisterDto {
 
   factory UserRegisterDto.fromJson(Map<String, dynamic> json) {
     return UserRegisterDto(
+      name: json['name'],
       email: json['email'],
       password: json['password'],
       phone: json['phone'],
@@ -26,6 +29,7 @@ class UserRegisterDto {
   }
 
   Map<String, dynamic> toJson() => {
+    'name': name,
     'email': email,
     'password': password,
     'phone': phone,

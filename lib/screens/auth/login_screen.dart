@@ -1,6 +1,5 @@
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/app_export.dart';
@@ -9,6 +8,8 @@ import '../../providers/auth_provider.dart';
 import '../../dto/auth/app_role.dart';
 import '../../widgets/custom_input.dart';
 import '../../widgets/primary_button.dart';
+import '../../widgets/animated_logo_widget.dart';
+import '../../widgets/loading_indicator_widget.dart';
 
 /// Pantalla de login completamente rediseñada para TruekApp
 /// Incluye: animaciones, validación, responsividad, y UI moderna minimalista
@@ -35,14 +36,9 @@ class _LoginScreenState extends State<LoginScreen>
 
   late AnimationController _slideInputsController;
   late AnimationController _logoController;
-  late AnimationController _lottieController;
 
   late Animation<double> _fadeInAnimation;
-
   late Animation<Offset> _slideInputsAnimation;
-  late Animation<double> _logoOpacityAnimation;
-  late Animation<Offset> _logoSlideAnimation;
-  late Animation<double> _logoScaleAnimation;
 
   @override
   void initState() {
@@ -61,26 +57,11 @@ class _LoginScreenState extends State<LoginScreen>
       CurvedAnimation(parent: _fadeInController, curve: Curves.easeInOut),
     );
 
-    // (El logo utiliza _logoController para su entrada animada)
-
-    // Controlador específico para la entrada del logo (intro tipo "Marvel")
+    // Controlador para el logo (se dejó por compatibilidad, ahora el widget
+    // `AnimatedLogoWidget` maneja su propia animación interna).
     _logoController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
-    );
-
-    _logoOpacityAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _logoController, curve: Curves.easeIn));
-
-    _logoSlideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.18),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _logoController, curve: Curves.easeOut));
-
-    _logoScaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(parent: _logoController, curve: Curves.easeOutBack),
     );
 
     // Animación Slide para inputs (más lenta)
@@ -95,9 +76,6 @@ class _LoginScreenState extends State<LoginScreen>
             curve: Curves.easeInOut,
           ),
         );
-
-    // Controlador para Lottie
-    _lottieController = AnimationController(vsync: this);
   }
 
   void _startAnimations() {
@@ -121,7 +99,6 @@ class _LoginScreenState extends State<LoginScreen>
   void dispose() {
     _fadeInController.dispose();
     _slideInputsController.dispose();
-    _lottieController.dispose();
     _logoController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
@@ -165,9 +142,6 @@ class _LoginScreenState extends State<LoginScreen>
       _errorMessage = '';
     });
 
-    // Inicia animación de Lottie (usar period explícito para evitar excepción en web)
-    _lottieController.repeat(period: const Duration(milliseconds: 1200));
-
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       await authProvider.login(email, password);
@@ -193,7 +167,6 @@ class _LoginScreenState extends State<LoginScreen>
       }
     } finally {
       if (mounted) {
-        _lottieController.stop();
         setState(() {
           _isLoading = false;
         });
@@ -231,25 +204,9 @@ class _LoginScreenState extends State<LoginScreen>
 
   /// Construye el logo animado con flechas de trueque
   Widget _buildAnimatedLogo() {
-    // Solo el icono (sin fondo). Tamaño protagonista.
-    const double iconSize = 100.0; // puedes ajustar entre 80-120
-
-    return FadeTransition(
-      opacity: _logoOpacityAnimation,
-      child: SlideTransition(
-        position: _logoSlideAnimation,
-        child: ScaleTransition(
-          scale: _logoScaleAnimation,
-          child: Center(
-            child: Icon(
-              Icons.swap_horiz_outlined,
-              size: iconSize,
-              color: AppColors.primary,
-            ),
-          ),
-        ),
-      ),
-    );
+    // Replaced the inline animation with a reusable widget that
+    // performs a fade+scale intro (600ms, easeOutBack).
+    return const AnimatedLogoWidget(size: 120);
   }
 
   /// Construye el formulario con inputs
@@ -280,6 +237,8 @@ class _LoginScreenState extends State<LoginScreen>
                 controller: _passwordController,
                 isPassword: true,
                 validator: _validatePassword,
+                textInputAction: TextInputAction.done,
+                onFieldSubmitted: (_) => _handleLogin(),
                 prefixIcon: Icons.lock_outline,
               ),
               // Forgot password link
@@ -349,30 +308,10 @@ class _LoginScreenState extends State<LoginScreen>
     return FadeTransition(
       opacity: _fadeInAnimation,
       child: _isLoading
-          ? Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Loader Lottie
-                  SizedBox(
-                    width: 50.w,
-                    height: 50.w,
-                    child: Lottie.asset(
-                      'assets/lotties/loader.json',
-                      controller: _lottieController,
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                  SizedBox(height: 2.h),
-                  Text(
-                    'Iniciando sesión...',
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.neutralDark,
-                    ),
-                  ),
-                ],
+          ? const Center(
+              child: LoadingIndicatorWidget(
+                size: 56,
+                message: 'Iniciando sesión...',
               ),
             )
           : PrimaryButton(

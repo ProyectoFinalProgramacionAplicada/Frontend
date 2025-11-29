@@ -8,10 +8,10 @@ class ListingSelectorSheet extends StatelessWidget {
   final ValueChanged<ListingDto> onSelected;
 
   const ListingSelectorSheet({
-    Key? key,
+    super.key,
     required this.myListings,
     required this.onSelected,
-  }) : super(key: key);
+  });
 
   String _formatCoins(double v) {
     if (v % 1 == 0) return v.toInt().toString();

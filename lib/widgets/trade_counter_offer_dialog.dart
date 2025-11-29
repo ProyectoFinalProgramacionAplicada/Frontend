@@ -11,13 +11,13 @@ class TradeCounterOfferDialog extends StatefulWidget {
   final double? currentRequestedTrueCoins;
 
   const TradeCounterOfferDialog({
-    Key? key,
+    super.key,
     required this.myListings,
     this.opponentListings,
     this.currentOfferedListingId,
     this.currentOfferedTrueCoins,
     this.currentRequestedTrueCoins,
-  }) : super(key: key);
+  });
 
   @override
   State<TradeCounterOfferDialog> createState() =>
@@ -41,7 +41,7 @@ class _TradeCounterOfferDialogState extends State<TradeCounterOfferDialog> {
     final Map<int, ListingDto> byId = {};
     for (final l in widget.myListings) {
       // Evitar items con id nulo o duplicados
-      if (l.id != null) byId[l.id] = l;
+      byId[l.id] = l;
     }
     _uniqueListings = byId.values.toList();
 
@@ -87,7 +87,7 @@ class _TradeCounterOfferDialogState extends State<TradeCounterOfferDialog> {
         mainAxisSize: MainAxisSize.min,
         children: [
           DropdownButtonFormField<int?>(
-            value: safeValue,
+            initialValue: safeValue,
             items: [
               const DropdownMenuItem<int?>(
                 value: null,
@@ -108,7 +108,7 @@ class _TradeCounterOfferDialogState extends State<TradeCounterOfferDialog> {
           if ((widget.opponentListings ?? []).isNotEmpty) ...[
             const SizedBox(height: 8),
             DropdownButtonFormField<int?>(
-              value: null,
+              initialValue: null,
               items: [
                 const DropdownMenuItem<int?>(
                   value: null,
@@ -121,8 +121,7 @@ class _TradeCounterOfferDialogState extends State<TradeCounterOfferDialog> {
                         value: l.id,
                         child: Text('Solicitar que cambie a: ${l.title}'),
                       ),
-                    )
-                    .toList(),
+                    ),
               ],
               onChanged: (v) => setState(() {
                 // almacenamos la petición como id

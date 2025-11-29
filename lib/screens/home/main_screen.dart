@@ -21,7 +21,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:geocoding/geocoding.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'dart:typed_data';
 import 'package:truekapp/screens/listing/pick_location_map_screen.dart';
 import 'package:truekapp/screens/wallet/wallet_screen.dart';
 import '../p2p/p2p_market_screen.dart';
