@@ -10,6 +10,7 @@
 /// //   dialCode: '+56',
 /// // )
 /// ```
+library;
 
 class PhoneFormatResult {
   final String flag;

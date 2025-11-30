@@ -3,9 +3,8 @@ import 'package:dio/dio.dart';
 import 'api_client.dart';
 import '../dto/auth/user_login_dto.dart';
 import '../dto/auth/user_register_dto.dart';
-import '../dto/auth/token_dto.dart';
+import '../dto/auth/login_response_dto.dart';
 import '../dto/auth/user_info_dto.dart';
-// AÑADIDO: El DTO para actualizar perfil
 import '../dto/auth/user_update_dto.dart';
 
 class ValidationException implements Exception {
@@ -25,20 +24,33 @@ class ValidationException implements Exception {
 class AuthService {
   final Dio _dio = ApiClient().dio;
 
-  Future<TokenDto> login(UserLoginDto dto) async {
+  /// Login - Ahora devuelve LoginResponseDto con token + user
+  Future<LoginResponseDto> login(UserLoginDto dto) async {
     try {
       final response = await _dio.post('/Auth/login', data: dto.toJson());
-      final data = response.data;
+      var data = response.data;
+
+      // DEBUG
+      print('=== DEBUG login() ===');
+      print('Raw login response: $data');
+
       if (data is String) {
         try {
-          final parsed = jsonDecode(data);
-          if (parsed is Map<String, dynamic>) return TokenDto.fromJson(parsed);
+          data = jsonDecode(data);
         } catch (_) {
-          return TokenDto(token: data);
+          // Si es solo el token como string (formato antiguo)
+          return LoginResponseDto(token: data, user: null);
         }
       }
-      if (data is Map<String, dynamic>) return TokenDto.fromJson(data);
-      return TokenDto(token: data?.toString());
+
+      if (data is Map<String, dynamic>) {
+        final loginResponse = LoginResponseDto.fromJson(data);
+        print('Token: ${loginResponse.token != null ? "OK" : "NULL"}');
+        print('User displayName: ${loginResponse.user?.displayName}');
+        return loginResponse;
+      }
+
+      throw Exception('Formato de respuesta inesperado del servidor');
     } on DioException catch (e) {
       final resp = e.response;
       if (resp != null) {
@@ -57,6 +69,10 @@ class AuthService {
 
   Future<void> register(UserRegisterDto dto) async {
     try {
+      // DEBUG: Imprimir datos que se envían al backend
+      print('=== DEBUG register() ===');
+      print('Sending to backend: ${dto.toJson()}');
+
       await _dio.post('/Auth/register', data: dto.toJson());
     } on DioException catch (e) {
       final resp = e.response;
@@ -118,15 +134,25 @@ class AuthService {
   Future<UserInfoDto> getMe() async {
     final response = await _dio.get('/Auth/me');
     var data = response.data;
+
+    // DEBUG: Imprimir respuesta cruda del backend
+    print('=== DEBUG getMe() ===');
+    print('Raw response data: $data');
+    print('Response type: ${data.runtimeType}');
+
     if (data is String) {
       try {
         final parsed = jsonDecode(data);
+        print('Parsed from string: $parsed');
         if (parsed is Map<String, dynamic>) return UserInfoDto.fromJson(parsed);
       } catch (_) {
         throw Exception('Unexpected response format from /Auth/me');
       }
     }
-    if (data is Map<String, dynamic>) return UserInfoDto.fromJson(data);
+    if (data is Map<String, dynamic>) {
+      print('displayName from backend: ${data['displayName']}');
+      return UserInfoDto.fromJson(data);
+    }
     throw Exception('Unexpected response format from /Auth/me');
   }
 

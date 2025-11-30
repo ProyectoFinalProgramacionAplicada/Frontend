@@ -22,37 +22,46 @@ class AuthProvider extends ChangeNotifier {
     isLoading = true;
     notifyListeners();
     try {
-      final tokenDto = await _service
+      // El backend ahora devuelve { token, user } en LoginResponseDto
+      final loginResponse = await _service
           .login(UserLoginDto(email: email, password: password))
           .timeout(
-            const Duration(seconds: 3),
+            const Duration(seconds: 10),
             onTimeout: () => throw Exception(
               'La conexión tardó demasiado. Intentá de nuevo.',
             ),
           );
 
-      if (tokenDto.token == null) throw Exception("Token inválido");
+      if (loginResponse.token == null) throw Exception("Token inválido");
 
-      ApiClient().setToken(tokenDto.token!);
-
+      // Guardar el token
+      ApiClient().setToken(loginResponse.token!);
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('auth_token', tokenDto.token!);
+      await prefs.setString('auth_token', loginResponse.token!);
 
-      try {
+      // ✅ IMPORTANTE: Usar el usuario que viene en la respuesta del login
+      // Ya no necesitamos llamar a getMe() porque el backend envía el user
+      if (loginResponse.user != null) {
+        user = loginResponse.user;
+        print('=== Usuario cargado del login ===');
+        print('displayName: ${user?.displayName}');
+        print('email: ${user?.email}');
+        print('phone: ${user?.phone}');
+      } else {
+        // Fallback: si por alguna razón no viene el user, llamar a getMe()
         user = await _service.getMe().timeout(
-          const Duration(seconds: 3),
+          const Duration(seconds: 5),
           onTimeout: () => throw Exception(
             'No se pudo obtener tu perfil. Intentá de nuevo.',
           ),
         );
-      } catch (e) {
-        // If fetching user fails (e.g. token invalid), clear saved token and state
-        ApiClient().clearToken();
-        await prefs.remove('auth_token');
-        user = null;
-        rethrow;
       }
     } catch (e) {
+      // Si falla, limpiar estado
+      ApiClient().clearToken();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('auth_token');
+      user = null;
       rethrow;
     } finally {
       isLoading = false;

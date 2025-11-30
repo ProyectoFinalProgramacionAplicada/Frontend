@@ -11,8 +11,8 @@ class ApiClient {
   ApiClient._internal() {
     dio = Dio(
       BaseOptions(
-        // Usa la URL correcta de la API desplegada
-        baseUrl: 'https://truekapp.azurewebsites.net//api',
+        // Backend en Azure (desplegado con LoginResponseDto)
+        baseUrl: 'https://app-251110224714.azurewebsites.net/api',
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 10),
         headers: {'Content-Type': 'application/json'},
