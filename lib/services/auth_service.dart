@@ -6,6 +6,8 @@ import '../dto/auth/user_register_dto.dart';
 import '../dto/auth/login_response_dto.dart';
 import '../dto/auth/user_info_dto.dart';
 import '../dto/auth/user_update_dto.dart';
+import '../dto/auth/forgot_password_dto.dart';
+import '../dto/auth/reset_password_dto.dart';
 
 class ValidationException implements Exception {
   final Map<String, List<String>> errors;
@@ -101,34 +103,87 @@ class AuthService {
     }
   }
 
+  /// Solicitar restablecimiento de contraseña
+  /// El backend devuelve directamente el token de reset (sin envío de email)
   Future<String> forgotPassword(String email) async {
-    final candidates = [
-      '/Auth/forgot-password',
-      '/Auth/forgot',
-      '/Auth/request-password-reset',
-    ];
-    for (final path in candidates) {
-      try {
-        final resp = await _dio.post(path, data: {'email': email});
-        final msg =
-            _extractMessageFromResponse(resp.data) ??
-            'Solicitud enviada si el correo existe.';
-        return msg;
-      } on DioException catch (e) {
-        final resp = e.response;
-        if (resp != null) {
-          if (resp.statusCode == 404) continue;
-          final serverMessage = _extractMessageFromResponse(resp.data);
-          throw Exception(
-            'Error: ${resp.statusCode}. ${serverMessage ?? resp.statusMessage ?? ''}',
-          );
-        }
-        rethrow;
+    try {
+      final dto = ForgotPasswordDto(email: email);
+      final resp = await _dio.post('/Auth/forgot-password', data: dto.toJson());
+
+      // El backend devuelve el token directamente en la respuesta
+      final data = resp.data;
+
+      // Intentar extraer el token de la respuesta
+      String? token;
+      if (data is String && data.isNotEmpty) {
+        token = data;
+      } else if (data is Map) {
+        token =
+            data['token']?.toString() ??
+            data['resetToken']?.toString() ??
+            data['message']?.toString();
       }
+
+      if (token == null || token.isEmpty) {
+        throw Exception('No se recibió el token de recuperación.');
+      }
+
+      return token;
+    } on DioException catch (e) {
+      final resp = e.response;
+      if (resp != null) {
+        if (resp.statusCode == 404) {
+          throw Exception('Usuario no encontrado.');
+        }
+        if (resp.statusCode == 400) {
+          final serverMessage = _extractMessageFromResponse(resp.data);
+          throw Exception(serverMessage ?? 'Email inválido.');
+        }
+        final serverMessage = _extractMessageFromResponse(resp.data);
+        throw Exception(serverMessage ?? 'Error al procesar solicitud.');
+      }
+      throw Exception('Error de conexión. Verifica tu internet.');
     }
-    throw Exception(
-      'Funcionalidad de restablecer contraseña no disponible en el servidor.',
-    );
+  }
+
+  /// Verificar si un token de reset es válido
+  Future<bool> verifyResetToken(String token) async {
+    try {
+      final resp = await _dio.get(
+        '/Auth/verify-reset-token',
+        queryParameters: {'token': token},
+      );
+      return resp.statusCode == 200;
+    } on DioException catch (e) {
+      final resp = e.response;
+      if (resp != null && resp.statusCode == 400) {
+        return false; // Token inválido o expirado
+      }
+      throw Exception('Error al verificar el token.');
+    }
+  }
+
+  /// Restablecer contraseña con token
+  Future<String> resetPassword(String token, String newPassword) async {
+    try {
+      final dto = ResetPasswordDto(token: token, newPassword: newPassword);
+      final resp = await _dio.post('/Auth/reset-password', data: dto.toJson());
+
+      final msg =
+          _extractMessageFromResponse(resp.data) ??
+          '¡Contraseña restablecida con éxito!';
+      return msg;
+    } on DioException catch (e) {
+      final resp = e.response;
+      if (resp != null) {
+        final serverMessage = _extractMessageFromResponse(resp.data);
+        if (resp.statusCode == 400) {
+          throw Exception(serverMessage ?? 'Token inválido o expirado.');
+        }
+        throw Exception(serverMessage ?? 'Error al restablecer contraseña.');
+      }
+      throw Exception('Error de conexión. Verifica tu internet.');
+    }
   }
 
   Future<UserInfoDto> getMe() async {
