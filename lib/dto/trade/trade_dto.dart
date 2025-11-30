@@ -39,9 +39,12 @@ class TradeDto {
       targetListingId: json['targetListingId'],
       offeredListingId: json['offeredListingId'],
       // Manejo robusto del enum
-      status: json['status'] is int 
-          ? TradeStatus.values[json['status']] 
-          : TradeStatus.values.firstWhere((e) => e.toString() == 'TradeStatus.${json['status']}', orElse: () => TradeStatus.Pending),
+      status: json['status'] is int
+          ? TradeStatus.values[json['status']]
+          : TradeStatus.values.firstWhere(
+              (e) => e.toString() == 'TradeStatus.${json['status']}',
+              orElse: () => TradeStatus.Pending,
+            ),
       message: json['message'],
       createdAt: DateTime.parse(json['createdAt']),
       offeredTrueCoins: json['offeredTrueCoins'] != null

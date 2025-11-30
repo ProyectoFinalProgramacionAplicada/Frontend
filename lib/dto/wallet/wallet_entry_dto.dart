@@ -17,7 +17,8 @@ class WalletEntryDto {
   factory WalletEntryDto.fromJson(Map<String, dynamic> json) {
     final rawType = json['type'];
     final typeIndex = rawType is int ? rawType : int.tryParse('$rawType') ?? 0;
-    final parsedType = (typeIndex >= 0 && typeIndex < WalletEntryType.values.length)
+    final parsedType =
+        (typeIndex >= 0 && typeIndex < WalletEntryType.values.length)
         ? WalletEntryType.values[typeIndex]
         : WalletEntryType.Deposit;
 

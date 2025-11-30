@@ -11,8 +11,8 @@ class WalletAdjustRequest {
   });
 
   Map<String, dynamic> toJson() => {
-        'userId': userId,
-        'amount': amount,
-        if (reason != null) 'reason': reason,
-      };
+    'userId': userId,
+    'amount': amount,
+    if (reason != null) 'reason': reason,
+  };
 }

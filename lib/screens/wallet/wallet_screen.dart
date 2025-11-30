@@ -89,7 +89,10 @@ class _WalletScreenState extends State<WalletScreen> {
     final bobPerCoin = _bobPerTrueCoin(market);
     final trueCoins = _trueCoinsToReceive(_bobAmount, bobPerCoin);
 
-    if (_bobAmount == null || _bobAmount! <= 0 || trueCoins == null || trueCoins <= 0) {
+    if (_bobAmount == null ||
+        _bobAmount! <= 0 ||
+        trueCoins == null ||
+        trueCoins <= 0) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Ingresa un monto válido en bolivianos.')),
@@ -134,9 +137,9 @@ class _WalletScreenState extends State<WalletScreen> {
       );
     } on DioException catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_mapDioError(error))),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_mapDioError(error))));
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -149,7 +152,9 @@ class _WalletScreenState extends State<WalletScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final title = _isDeposit ? 'Recargar TrueCoins (P2P)' : 'Retirar TrueCoins (P2P)';
+    final title = _isDeposit
+        ? 'Recargar TrueCoins (P2P)'
+        : 'Retirar TrueCoins (P2P)';
 
     return Scaffold(
       appBar: AppBar(title: Text(title)),
@@ -245,8 +250,9 @@ class _RateHeader extends StatelessWidget {
     final tenCoinText = bobPerCoin != null
         ? '10 TrueCoins ≈ Bs ${(bobPerCoin! * _WalletScreenState._trueCoinsPerDollar).toStringAsFixed(2)}'
         : 'Obteniendo tasa...';
-    final oneCoinText =
-        bobPerCoin != null ? '1 TrueCoin ≈ Bs ${bobPerCoin!.toStringAsFixed(2)}' : '';
+    final oneCoinText = bobPerCoin != null
+        ? '1 TrueCoin ≈ Bs ${bobPerCoin!.toStringAsFixed(2)}'
+        : '';
 
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -286,7 +292,7 @@ class _RateHeader extends StatelessWidget {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.refresh),
-            )
+            ),
           ],
         ),
       ),
@@ -315,15 +321,22 @@ class _TopUpForm extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Card(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(20.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isDeposit ? '¿Cuánto deseas ingresar?' : '¿Cuánto deseas retirar?',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  isDeposit
+                      ? '¿Cuánto deseas ingresar?'
+                      : '¿Cuánto deseas retirar?',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -351,7 +364,9 @@ class _TopUpForm extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         Card(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(20.0),
             child: Column(
@@ -370,7 +385,9 @@ class _TopUpForm extends StatelessWidget {
                       style: const TextStyle(color: Colors.grey),
                     ),
                     Text(
-                      bobAmount != null ? 'Bs ${bobAmount!.toStringAsFixed(2)}' : '—',
+                      bobAmount != null
+                          ? 'Bs ${bobAmount!.toStringAsFixed(2)}'
+                          : '—',
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                   ],
@@ -380,11 +397,15 @@ class _TopUpForm extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      isDeposit ? 'Recibirás (TrueCoins)' : 'Venderás (TrueCoins)',
+                      isDeposit
+                          ? 'Recibirás (TrueCoins)'
+                          : 'Venderás (TrueCoins)',
                       style: const TextStyle(color: Colors.grey),
                     ),
                     Text(
-                      trueCoins != null ? '${trueCoins!.toStringAsFixed(2)} TC' : '—',
+                      trueCoins != null
+                          ? '${trueCoins!.toStringAsFixed(2)} TC'
+                          : '—',
                       style: const TextStyle(
                         fontWeight: FontWeight.w700,
                         color: AppColors.primary,
@@ -424,13 +445,13 @@ class _ConfirmCard extends StatelessWidget {
         !isLoading && !isProcessing && trueCoins != null && trueCoins! > 0;
 
     String formatBob(double? value) =>
-      value != null ? 'Bs ${value.toStringAsFixed(2)}' : '—';
+        value != null ? 'Bs ${value.toStringAsFixed(2)}' : '—';
     String formatCoins(double? value) =>
-      value != null ? '${value.toStringAsFixed(2)} TrueCoins' : '—';
+        value != null ? '${value.toStringAsFixed(2)} TrueCoins' : '—';
 
     final actionDescription = isDeposit
-      ? 'pagar ${formatBob(bobAmount)} y recibir ${formatCoins(trueCoins)}'
-      : 'vender ${formatCoins(trueCoins)} y recibir ${formatBob(bobAmount)}';
+        ? 'pagar ${formatBob(bobAmount)} y recibir ${formatCoins(trueCoins)}'
+        : 'vender ${formatCoins(trueCoins)} y recibir ${formatBob(bobAmount)}';
 
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -463,11 +484,13 @@ class _ConfirmCard extends StatelessWidget {
                       ),
                     )
                   : const Icon(Icons.check_circle_outline),
-              label: Text(isProcessing ? 'Creando orden...' : 'Crear orden P2P'),
+              label: Text(
+                isProcessing ? 'Creando orden...' : 'Crear orden P2P',
+              ),
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 50),
               ),
-            )
+            ),
           ],
         ),
       ),

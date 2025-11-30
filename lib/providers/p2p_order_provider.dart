@@ -24,7 +24,8 @@ class P2POrderProvider with ChangeNotifier {
   Map<int, P2POrderDto> get trackedOrders => Map.unmodifiable(_trackedOrders);
 
   void cacheTrackedOrder(P2POrderDto order, {bool persist = true}) {
-    final shouldRemove = order.status >= P2POrderStatus.released ||
+    final shouldRemove =
+        order.status >= P2POrderStatus.released ||
         order.status == P2POrderStatus.cancelled ||
         order.status == P2POrderStatus.disputed;
 
@@ -110,9 +111,7 @@ class P2POrderProvider with ChangeNotifier {
         }
       }
 
-      final combined = {
-        for (final order in publicOrders) order.id: order,
-      };
+      final combined = {for (final order in publicOrders) order.id: order};
 
       for (final order in personalOrders) {
         combined[order.id] = order;
@@ -130,9 +129,11 @@ class P2POrderProvider with ChangeNotifier {
   List<P2POrderDto> _mapResponseToOrders(dynamic data) {
     if (data is List) {
       return data
-          .map((item) => item is Map<String, dynamic>
-              ? P2POrderDto.fromJson(item)
-              : null)
+          .map(
+            (item) => item is Map<String, dynamic>
+                ? P2POrderDto.fromJson(item)
+                : null,
+          )
           .whereType<P2POrderDto>()
           .toList();
     }
@@ -165,8 +166,10 @@ class P2POrderProvider with ChangeNotifier {
     };
 
     for (final entry in _trackedOrders.values) {
-      final involvesUser = entry.creatorUserId == userId ||
-          (entry.counterpartyUserId != null && entry.counterpartyUserId == userId);
+      final involvesUser =
+          entry.creatorUserId == userId ||
+          (entry.counterpartyUserId != null &&
+              entry.counterpartyUserId == userId);
       if (!involvesUser || !_shouldDisplayToParticipant(entry.status)) continue;
 
       combined[entry.id] = entry;
@@ -211,12 +214,14 @@ class P2POrderProvider with ChangeNotifier {
   }
 
   void _schedulePersistTrackedIds() {
-    SharedPreferences.getInstance().then((prefs) {
-      final ids = _trackedOrders.keys.map((e) => e.toString()).toList();
-      prefs.setStringList(_trackedPrefsKey, ids);
-    }).catchError((_) {
-      // Ignore persistence errors silently.
-    });
+    SharedPreferences.getInstance()
+        .then((prefs) {
+          final ids = _trackedOrders.keys.map((e) => e.toString()).toList();
+          prefs.setStringList(_trackedPrefsKey, ids);
+        })
+        .catchError((_) {
+          // Ignore persistence errors silently.
+        });
   }
 
   bool _shouldDisplayToParticipant(int status) {

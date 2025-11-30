@@ -32,7 +32,7 @@ class TruekApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-        providers: [
+      providers: [
         ChangeNotifierProvider<AuthProvider>.value(value: initialAuthProvider),
         ChangeNotifierProvider(create: (_) => ListingProvider()),
         ChangeNotifierProvider(create: (_) => TradeProvider()),
@@ -40,8 +40,10 @@ class TruekApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => WalletProvider()),
         ChangeNotifierProvider(create: (_) => MarketProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
-          ChangeNotifierProvider(create: (_) => AdminProvider()),
-        ChangeNotifierProvider(create: (_) => P2POrderProvider(ApiClient().dio)),
+        ChangeNotifierProvider(create: (_) => AdminProvider()),
+        ChangeNotifierProvider(
+          create: (_) => P2POrderProvider(ApiClient().dio),
+        ),
       ],
       child: Sizer(
         builder: (context, orientation, deviceType) {
@@ -52,10 +54,10 @@ class TruekApp extends StatelessWidget {
             darkTheme: AppTheme.darkTheme,
             themeMode: ThemeMode.light,
             initialRoute: initialAuthProvider.isLoggedIn
-              ? (initialAuthProvider.currentUser?.role == AppRole.Admin
-                ? AppRoutes.adminActiveUsers
-                : AppRoutes.home)
-              : AppRoutes.login,
+                ? (initialAuthProvider.currentUser?.role == AppRole.Admin
+                      ? AppRoutes.adminActiveUsers
+                      : AppRoutes.home)
+                : AppRoutes.login,
             routes: AppRoutes.routes,
           );
         },

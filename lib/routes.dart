@@ -12,7 +12,8 @@ import 'screens/wallet/wallet_screen.dart';
 // Importamos la nueva pantalla de perfil
 import 'screens/profile/profile_screen.dart';
 // Admin
-import 'screens/admin/active_users_screen.dart';
+import 'screens/admin/admin_dashboard_screen.dart';
+import 'screens/admin/user_detail_screen.dart';
 
 class AppRoutes {
   static const String login = '/login';
@@ -44,15 +45,17 @@ class AppRoutes {
 
     wallet: (context) {
       final args = ModalRoute.of(context)?.settings.arguments;
-      final operation = args is WalletOperationType ? args : WalletOperationType.deposit;
+      final operation = args is WalletOperationType
+          ? args
+          : WalletOperationType.deposit;
       return WalletScreen(operationType: operation);
     },
-    
+
     // Registramos la pantalla de perfil aquí
     profile: (_) => const ProfileScreen(),
-    adminActiveUsers: (_) => const ActiveUsersScreen(),
-    adminUserDetail: (_) => const Scaffold(
-      body: SizedBox(),
-    ), // placeholder, screen will be registered after creation
+    // Admin - Dashboard principal con métricas
+    adminActiveUsers: (_) => const AdminDashboardScreen(),
+    // Admin - Detalle de usuario
+    adminUserDetail: (_) => const UserDetailScreen(),
   };
 }

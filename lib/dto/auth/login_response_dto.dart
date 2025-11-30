@@ -6,22 +6,16 @@ class LoginResponseDto {
   final String? token;
   final UserInfoDto? user;
 
-  LoginResponseDto({
-    this.token,
-    this.user,
-  });
+  LoginResponseDto({this.token, this.user});
 
   factory LoginResponseDto.fromJson(Map<String, dynamic> json) {
     return LoginResponseDto(
       token: json['token']?.toString(),
-      user: json['user'] != null 
+      user: json['user'] != null
           ? UserInfoDto.fromJson(json['user'] as Map<String, dynamic>)
           : null,
     );
   }
 
-  Map<String, dynamic> toJson() => {
-    'token': token,
-    'user': user?.toJson(),
-  };
+  Map<String, dynamic> toJson() => {'token': token, 'user': user?.toJson()};
 }

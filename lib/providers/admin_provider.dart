@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import '../services/listing_service.dart';
+import '../services/admin_service.dart';
 import '../dto/listing/listing_dto.dart';
+import '../dto/admin/admin_metrics_dto.dart';
 
 class ActiveUserSummary {
   final int userId;
@@ -8,6 +10,7 @@ class ActiveUserSummary {
   final String? avatarUrl;
   final double averageRating;
   final int listingCount;
+  final int tradeCount;
 
   ActiveUserSummary({
     required this.userId,
@@ -15,16 +18,25 @@ class ActiveUserSummary {
     this.avatarUrl,
     required this.averageRating,
     required this.listingCount,
+    this.tradeCount = 0,
   });
 }
 
 class AdminProvider with ChangeNotifier {
   final ListingService _listingService = ListingService();
+  final AdminService _adminService = AdminService();
 
   bool _isLoading = false;
+  bool _isLoadingMetrics = false;
   List<ActiveUserSummary> _activeUsers = [];
   // keep raw listings in memory so admin widgets can compute histograms and other metrics
   List<ListingDto> _listings = [];
+
+  // Métricas del backend (nuevos DTOs que coinciden con la API real)
+  AdminStatsDto _stats = AdminStatsDto.empty();
+  List<AdminUserDto> _adminUsers = [];
+  List<AdminTradeDto> _adminTrades = [];
+  List<WalletActivityDto> _walletActivities = [];
 
   // Additional aggregated metrics
   int _totalListings = 0;
@@ -34,7 +46,50 @@ class AdminProvider with ChangeNotifier {
   double _avgTrueCoinsPerListing = 0.0;
 
   bool get isLoading => _isLoading;
+  bool get isLoadingMetrics => _isLoadingMetrics;
   List<ActiveUserSummary> get activeUsers => List.unmodifiable(_activeUsers);
+
+  // Getters para las nuevas métricas del backend (desde AdminStatsDto)
+  AdminStatsDto get stats => _stats;
+  int get totalUsers => _stats.totalUsers;
+  int get activeUsersCount => _stats.activeUsers;
+  int get inactiveUsersCount => _stats.inactiveUsers;
+  int get newUsersLast7Days => _stats.newUsersLast7Days;
+  int get activeUsersLast7Days =>
+      _stats.newUsersLast7Days; // Alias para compatibilidad con UI
+  int get totalTrades => _stats.totalTrades;
+  int get completedTrades => _stats.completedTrades;
+  int get cancelledTrades => _stats.cancelledTrades;
+  double get completionRate =>
+      _stats.completionRate; // Ya viene como porcentaje (ej: 12.12)
+  double get avgClosureTimeHours => _stats.avgClosureTimeHours;
+  int get backendTotalListings => _stats.totalListings;
+  int get publishedListings => _stats.publishedListings;
+
+  // Getters para usuarios y trades del admin
+  List<AdminUserDto> get adminUsers => List.unmodifiable(_adminUsers);
+  List<AdminTradeDto> get adminTrades => List.unmodifiable(_adminTrades);
+  List<WalletActivityDto> get walletActivities =>
+      List.unmodifiable(_walletActivities);
+
+  // Compatibilidad con código anterior (usando valores vacíos o derivados)
+  List<DailyActiveUsersEntry> get dailyActiveUsersTrend => [];
+  double get tradeCompletionRate =>
+      _stats.completionRate / 100; // Convertir a decimal para compatibilidad
+  double get averageTradeCompletionTimeHours => _stats.avgClosureTimeHours;
+  int get tradesLast30Days => _stats.totalTrades;
+  double get tradeAcceptRejectRatio => _stats.cancelledTrades > 0
+      ? _stats.completedTrades / _stats.cancelledTrades
+      : _stats.completedTrades.toDouble();
+  double get totalTrueCoinVolume => _totalTrueCoinsActive;
+  ListingTypeDistribution get listingTypeDistribution =>
+      ListingTypeDistribution(
+        productOnly: _stats.publishedListings,
+        trueCoinOnly: 0,
+        hybrid: 0,
+      );
+  List<TopUserEntry> get topUsersByTrades => [];
+  List<TopUserEntry> get topUsersByListingsFromBackend => [];
 
   /// Devuelve las publicaciones completas cargadas en memoria filtradas por ownerUserId
   List<ListingDto> getListingsForUser(int userId) {
@@ -183,5 +238,70 @@ class AdminProvider with ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  /// Carga las métricas avanzadas desde el backend
+  Future<void> loadMetrics() async {
+    _isLoadingMetrics = true;
+    notifyListeners();
+    try {
+      // Cargar estadísticas desde el endpoint correcto /Admin/stats
+      _stats = await _adminService.getStats();
+
+      // Cargar usuarios y trades para datos adicionales
+      _adminUsers = await _adminService.getUsers();
+      _adminTrades = await _adminService.getTrades();
+
+      // Opcionalmente cargar actividad de wallet
+      try {
+        _walletActivities = await _adminService.getWalletActivity();
+      } catch (e) {
+        _walletActivities = [];
+      }
+    } catch (e) {
+      // Si falla, mantenemos las métricas vacías
+      _stats = AdminStatsDto.empty();
+      _adminUsers = [];
+      _adminTrades = [];
+      _walletActivities = [];
+    } finally {
+      _isLoadingMetrics = false;
+      notifyListeners();
+    }
+  }
+
+  /// Carga todos los datos del admin (usuarios activos + métricas)
+  Future<void> loadAllData() async {
+    _isLoading = true;
+    _isLoadingMetrics = true;
+    notifyListeners();
+
+    // Cargar en paralelo
+    await Future.wait([loadActiveUsers(), loadMetrics()]);
+  }
+
+  /// Formatea el tiempo promedio de cierre de trades
+  String get formattedAvgCompletionTime {
+    final hours = averageTradeCompletionTimeHours;
+    if (hours < 1) {
+      return '${(hours * 60).toStringAsFixed(0)} min';
+    } else if (hours < 24) {
+      return '${hours.toStringAsFixed(1)} hrs';
+    } else {
+      final days = hours / 24;
+      return '${days.toStringAsFixed(1)} días';
+    }
+  }
+
+  /// Formatea la tasa de completado como porcentaje (el backend ya lo devuelve como porcentaje)
+  String get formattedCompletionRate {
+    return '${completionRate.toStringAsFixed(1)}%';
+  }
+
+  /// Formatea el ratio aceptados/rechazados
+  String get formattedAcceptRejectRatio {
+    if (tradeAcceptRejectRatio == 0) return '0:1';
+    if (tradeAcceptRejectRatio.isInfinite) return '∞:1';
+    return '${tradeAcceptRejectRatio.toStringAsFixed(1)}:1';
   }
 }

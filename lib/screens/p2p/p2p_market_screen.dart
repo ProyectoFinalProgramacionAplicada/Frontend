@@ -55,17 +55,15 @@ class _P2PMarketScreenState extends State<P2PMarketScreen> {
       _openDetail(order.id);
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_mapError(error))),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_mapError(error))));
     }
   }
 
   void _openDetail(int orderId) {
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => P2POrderDetailScreen(orderId: orderId),
-      ),
+      MaterialPageRoute(builder: (_) => P2POrderDetailScreen(orderId: orderId)),
     );
   }
 
@@ -102,7 +100,8 @@ class _P2PMarketScreenState extends State<P2PMarketScreen> {
                 itemCount: orders.length,
                 itemBuilder: (context, index) {
                   final order = orders[index];
-                  final isParticipant = userId != null &&
+                  final isParticipant =
+                      userId != null &&
                       (order.creatorUserId == userId ||
                           (order.counterpartyUserId != null &&
                               order.counterpartyUserId == userId));
@@ -116,8 +115,9 @@ class _P2PMarketScreenState extends State<P2PMarketScreen> {
                     onTakeOrder: isParticipant
                         ? null
                         : () => _handleTakeOrder(order),
-                    onViewDetail:
-                        isParticipant ? () => _openDetail(order.id) : null,
+                    onViewDetail: isParticipant
+                        ? () => _openDetail(order.id)
+                        : null,
                   );
                 },
               ),

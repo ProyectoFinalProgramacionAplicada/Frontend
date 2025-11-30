@@ -18,7 +18,8 @@ class P2POrderDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => P2POrderDetailProvider(ApiClient().dio)..loadOrder(orderId),
+      create: (_) =>
+          P2POrderDetailProvider(ApiClient().dio)..loadOrder(orderId),
       child: _P2POrderDetailView(orderId: orderId),
     );
   }
@@ -81,7 +82,8 @@ class _P2POrderDetailViewState extends State<_P2POrderDetailView> {
           appBar: AppBar(title: Text('Orden P2P #${widget.orderId}')),
           body: Column(
             children: [
-              if (provider.isLoading) const LinearProgressIndicator(minHeight: 2),
+              if (provider.isLoading)
+                const LinearProgressIndicator(minHeight: 2),
               Expanded(child: body),
             ],
           ),
@@ -110,9 +112,9 @@ class _P2POrderDetailViewState extends State<_P2POrderDetailView> {
     try {
       await action();
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(successMessage)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(successMessage)));
       }
     } on DioException catch (error) {
       if (!context.mounted) return;
@@ -125,9 +127,9 @@ class _P2POrderDetailViewState extends State<_P2POrderDetailView> {
 
   void _showError(BuildContext context, String message) {
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   String _mapDioError(DioException error) {
@@ -257,8 +259,7 @@ class _OrderDetailContent extends StatelessWidget {
         userId == releaserId;
   }
 
-  bool _shouldShowPaymentQr(
-      P2POrderDto order, int? userId, int? payerId) {
+  bool _shouldShowPaymentQr(P2POrderDto order, int? userId, int? payerId) {
     return userId != null &&
         payerId != null &&
         order.status == P2POrderStatus.matched &&
@@ -289,20 +290,23 @@ class _InfoCard extends StatelessWidget {
               children: [
                 Text(
                   _typeLabel(order.type),
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Chip(
                       label: Text(_statusLabel(order.status)),
-                      backgroundColor:
-                        _statusColor(order.status).withValues(alpha: 0.15),
+                      backgroundColor: _statusColor(
+                        order.status,
+                      ).withValues(alpha: 0.15),
                     ),
                     IconButton(
                       tooltip: 'Actualizar orden',
-                      onPressed:
-                          isRefreshing ? null : () => onRefresh(),
+                      onPressed: isRefreshing ? null : () => onRefresh(),
                       icon: isRefreshing
                           ? const SizedBox(
                               width: 18,
@@ -316,10 +320,19 @@ class _InfoCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            _InfoRow(label: 'Monto en Bs', value: 'Bs ${order.amountBob.toStringAsFixed(2)}'),
-            _InfoRow(label: 'TrueCoins', value: order.amountTrueCoins.toStringAsFixed(2)),
+            _InfoRow(
+              label: 'Monto en Bs',
+              value: 'Bs ${order.amountBob.toStringAsFixed(2)}',
+            ),
+            _InfoRow(
+              label: 'TrueCoins',
+              value: order.amountTrueCoins.toStringAsFixed(2),
+            ),
             _InfoRow(label: 'TC/BOB', value: order.rate.toStringAsFixed(4)),
-            _InfoRow(label: 'Metodo de pago', value: order.paymentMethod ?? 'N/D'),
+            _InfoRow(
+              label: 'Metodo de pago',
+              value: order.paymentMethod ?? 'N/D',
+            ),
             _InfoRow(label: 'Creada', value: _formatDate(order.createdAt)),
           ],
         ),
@@ -415,11 +428,15 @@ class _StakeholdersCard extends StatelessWidget {
             const Divider(height: 24),
             _InfoRow(
               label: 'Debe pagar',
-              value: payerId != null ? 'Usuario #$payerId' : 'En espera de contraparte',
+              value: payerId != null
+                  ? 'Usuario #$payerId'
+                  : 'En espera de contraparte',
             ),
             _InfoRow(
               label: 'Debe liberar',
-              value: releaserId != null ? 'Usuario #$releaserId' : 'En espera de contraparte',
+              value: releaserId != null
+                  ? 'Usuario #$releaserId'
+                  : 'En espera de contraparte',
             ),
           ],
         ),

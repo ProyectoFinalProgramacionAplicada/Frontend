@@ -4,7 +4,7 @@ class P2POrderType {
 }
 
 class P2POrderCreateRequest {
-  final int type;              // 0 = Deposit, 1 = Withdraw
+  final int type; // 0 = Deposit, 1 = Withdraw
   final double amountBob;
   final double amountTrueCoins;
   final double rate;
@@ -19,10 +19,10 @@ class P2POrderCreateRequest {
   });
 
   Map<String, dynamic> toJson() => {
-        'type': type,
-        'amountBob': amountBob,
-        'amountTrueCoins': amountTrueCoins,
-        'rate': rate,
-        'paymentMethod': paymentMethod,
-      };
+    'type': type,
+    'amountBob': amountBob,
+    'amountTrueCoins': amountTrueCoins,
+    'rate': rate,
+    'paymentMethod': paymentMethod,
+  };
 }
