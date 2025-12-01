@@ -606,10 +606,10 @@ class _HomeTabState extends State<_HomeTab> {
             final isDesktop = screenWidth >= 1200;
             final isTablet = screenWidth >= 900 && screenWidth < 1200;
 
-            // Padding horizontal más amplio en desktop para centrar contenido
+            // Padding: mínimo en desktop para que el banner ocupe todo el ancho
             final horizontalPadding = isDesktop
-                ? 48.0
-                : (isTablet ? 32.0 : _MainScreenStyle.pagePadding);
+                ? 24.0
+                : (isTablet ? 20.0 : _MainScreenStyle.pagePadding);
             // Reducir spacing vertical en desktop
             final sectionSpacing = isDesktop
                 ? 20.0
@@ -623,28 +623,14 @@ class _HomeTabState extends State<_HomeTab> {
                   vertical: _MainScreenStyle.pagePadding,
                 ),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Header con ubicación y balance - limitar ancho en desktop
-                    Center(
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxWidth: isDesktop ? 800 : double.infinity,
-                        ),
-                        child: _buildHeader(auth),
-                      ),
-                    ),
+                    // Header banner - ocupa todo el ancho disponible
+                    _buildHeader(auth),
                     SizedBox(height: sectionSpacing),
 
-                    // Barra de búsqueda moderna - limitar ancho en desktop
-                    Center(
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxWidth: isDesktop ? 600 : double.infinity,
-                        ),
-                        child: _buildSearchBar(listingProvider),
-                      ),
-                    ),
+                    // Barra de búsqueda - ancho completo
+                    _buildSearchBar(listingProvider),
                     SizedBox(height: sectionSpacing),
 
                     // Sección Destacados
@@ -1100,6 +1086,7 @@ class _HomeTabState extends State<_HomeTab> {
     }
 
     // Calcular columnas según breakpoints
+    // AspectRatio ajustado para tipografía más grande
     int crossAxisCount;
     double childAspectRatio;
     double spacing;
@@ -1108,17 +1095,17 @@ class _HomeTabState extends State<_HomeTab> {
       // Desktop: 4 columnas
       crossAxisCount = 4;
       childAspectRatio = 0.72;
-      spacing = 20;
+      spacing = 16;
     } else if (screenWidth >= 900) {
       // Tablet: 3 columnas
       crossAxisCount = 3;
-      childAspectRatio = 0.73;
-      spacing = 18;
+      childAspectRatio = 0.70;
+      spacing = 14;
     } else {
-      // Mobile: 2 columnas (mantener igual)
+      // Mobile: 2 columnas
       crossAxisCount = 2;
-      childAspectRatio = 0.75;
-      spacing = 16;
+      childAspectRatio = 0.68;
+      spacing = 12;
     }
 
     return GridView.builder(
@@ -1157,9 +1144,11 @@ class _HomeTabState extends State<_HomeTab> {
         clipBehavior: Clip.antiAlias,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Expanded(
-              flex: 3,
+            // Imagen con aspect ratio fijo
+            AspectRatio(
+              aspectRatio: 1.0,
               child: ClipRRect(
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(16),
@@ -1193,68 +1182,72 @@ class _HomeTabState extends State<_HomeTab> {
                 ),
               ),
             ),
-            Expanded(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      listing.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
-                        color: const Color(0xFF1E293B),
+            // Contenido compacto - sin espacio extra
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  Text(
+                    listing.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                      color: const Color(0xFF1E293B),
+                      height: 1.25,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.monetization_on_rounded,
+                        size: 16,
+                        color: AppColors.primary,
                       ),
-                    ),
-                    const Spacer(),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.monetization_on_rounded,
-                          size: 16,
-                          color: AppColors.primary,
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            '${_formatCoins(listing.trueCoinValue)} coins',
-                            style: GoogleFonts.inter(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 12,
-                              color: AppColors.primary,
-                            ),
-                            overflow: TextOverflow.ellipsis,
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          '${_formatCoins(listing.trueCoinValue)} coins',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            color: AppColors.primary,
                           ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.location_on_rounded,
-                          size: 14,
-                          color: Colors.grey[400],
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            distanceLabel ?? 'Cerca de ti',
-                            style: GoogleFonts.inter(
-                              fontSize: 11,
-                              color: Colors.grey[500],
-                            ),
-                            overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.location_on_rounded,
+                        size: 14,
+                        color: Colors.grey[400],
+                      ),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          distanceLabel ?? 'Cerca de ti',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w400,
+                            color: Colors.grey[500],
                           ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
-                    ),
-                  ],
-                ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ],
