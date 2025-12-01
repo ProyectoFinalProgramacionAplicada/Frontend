@@ -47,10 +47,12 @@ class UserInfoDto {
         }
         if (v is String) {
           final idx = int.tryParse(v);
-          if (idx != null && idx >= 0 && idx < AppRole.values.length) return AppRole.values[idx];
+          if (idx != null && idx >= 0 && idx < AppRole.values.length)
+            return AppRole.values[idx];
           return AppRole.values.firstWhere(
-            (r) => r.toString().split('.').last.toLowerCase() == v.toLowerCase(), 
-            orElse: () => AppRole.User
+            (r) =>
+                r.toString().split('.').last.toLowerCase() == v.toLowerCase(),
+            orElse: () => AppRole.User,
           );
         }
       } catch (_) {}

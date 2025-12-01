@@ -127,16 +127,16 @@ class _PrimaryButtonState extends State<PrimaryButton>
                     child: Center(
                       child: widget.isLoading
                           ? (widget.loadingWidget ??
-                              SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2.5,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white.withOpacity(0.9),
+                                SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white.withOpacity(0.9),
+                                    ),
                                   ),
-                                ),
-                              ))
+                                ))
                           : Text(
                               widget.label,
                               style: GoogleFonts.inter(

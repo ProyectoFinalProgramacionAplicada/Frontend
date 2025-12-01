@@ -28,8 +28,10 @@ class MarketProvider extends ChangeNotifier {
 
   void startAutoRefresh({Duration interval = const Duration(minutes: 1)}) {
     _autoRefreshTimer?.cancel();
-    _autoRefreshTimer =
-        Timer.periodic(interval, (_) => fetchRate(silent: true));
+    _autoRefreshTimer = Timer.periodic(
+      interval,
+      (_) => fetchRate(silent: true),
+    );
   }
 
   void stopAutoRefresh() {

@@ -44,15 +44,15 @@ class ListingCreateDto {
   }
 
   Map<String, dynamic> toJson() => {
-        'title': title,
-        'trueCoinValue': trueCoinValue,
-        'description': description,
-        'address': address,
-        'latitude': latitude,
-        'longitude': longitude,
+    'title': title,
+    'trueCoinValue': trueCoinValue,
+    'description': description,
+    'address': address,
+    'latitude': latitude,
+    'longitude': longitude,
 
-        /// Los bytes NO se envían como JSON, solo se usan en multipart.
-        /// Este campo queda para depuración o consistencia.
-        'imageFileName': imageFileName,
-      };
+    /// Los bytes NO se envían como JSON, solo se usan en multipart.
+    /// Este campo queda para depuración o consistencia.
+    'imageFileName': imageFileName,
+  };
 }

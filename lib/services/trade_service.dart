@@ -48,9 +48,18 @@ class TradeService {
         }
         if (raw is Map<String, dynamic>) {
           // Common wrappers
-          if (raw['data'] is List) return (raw['data'] as List).map((e) => e as Map<String, dynamic>).toList();
-          if (raw['items'] is List) return (raw['items'] as List).map((e) => e as Map<String, dynamic>).toList();
-          if (raw['messages'] is List) return (raw['messages'] as List).map((e) => e as Map<String, dynamic>).toList();
+          if (raw['data'] is List)
+            return (raw['data'] as List)
+                .map((e) => e as Map<String, dynamic>)
+                .toList();
+          if (raw['items'] is List)
+            return (raw['items'] as List)
+                .map((e) => e as Map<String, dynamic>)
+                .toList();
+          if (raw['messages'] is List)
+            return (raw['messages'] as List)
+                .map((e) => e as Map<String, dynamic>)
+                .toList();
           // If it's a single object representing a message, return single-element list
           return [raw];
         }
@@ -68,12 +77,14 @@ class TradeService {
     // The API expects a JSON string in the body (e.g. "Hola...").
     // Ensure we send a valid JSON payload by encoding the Dart String.
     final body = jsonEncode(dto.message);
-    await _dio.post('/Trades/$tradeId/messages',
-        data: body,
-        options: Options(headers: {"Content-Type": "application/json"}));
+    await _dio.post(
+      '/Trades/$tradeId/messages',
+      data: body,
+      options: Options(headers: {"Content-Type": "application/json"}),
+    );
   }
 
   Future<void> completeTrade(int tradeId) async {
-  await _dio.post('/Trades/$tradeId/complete');
-}
+    await _dio.post('/Trades/$tradeId/complete');
+  }
 }

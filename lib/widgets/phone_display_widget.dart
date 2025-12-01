@@ -4,13 +4,13 @@ import '../core/utils/phone_formatter.dart';
 import '../core/constants/app_colors.dart';
 
 /// Widget elegante estilo AppStore para mostrar un número de teléfono E.164.
-/// 
+///
 /// Muestra la bandera del país, el nombre y el número formateado:
 /// ```
 /// 🇨🇱 Chile
 /// +56 9 9876 5432
 /// ```
-/// 
+///
 /// Ejemplo de uso:
 /// ```dart
 /// PhoneDisplayWidget(phone: '+5699876543')
@@ -47,10 +47,7 @@ class PhoneDisplayWidget extends StatelessWidget {
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            result.flag,
-            style: TextStyle(fontSize: flagSize),
-          ),
+          Text(result.flag, style: TextStyle(fontSize: flagSize)),
           const SizedBox(width: 8),
           Text(
             result.formattedNumber,
@@ -79,10 +76,7 @@ class PhoneDisplayWidget extends StatelessWidget {
             borderRadius: BorderRadius.circular(8),
           ),
           alignment: Alignment.center,
-          child: Text(
-            result.flag,
-            style: TextStyle(fontSize: flagSize),
-          ),
+          child: Text(result.flag, style: TextStyle(fontSize: flagSize)),
         ),
         const SizedBox(width: 12),
         // Columna con país y número
@@ -122,11 +116,7 @@ class PhoneDisplayInline extends StatelessWidget {
   final String? phone;
   final TextStyle? style;
 
-  const PhoneDisplayInline({
-    super.key,
-    required this.phone,
-    this.style,
-  });
+  const PhoneDisplayInline({super.key, required this.phone, this.style});
 
   @override
   Widget build(BuildContext context) {
@@ -135,14 +125,8 @@ class PhoneDisplayInline extends StatelessWidget {
     }
 
     final result = PhoneFormatter.format(phone);
-    final textStyle = style ?? TextStyle(
-      fontSize: 14,
-      color: Colors.grey[600],
-    );
+    final textStyle = style ?? TextStyle(fontSize: 14, color: Colors.grey[600]);
 
-    return Text(
-      '${result.flag} ${result.formattedNumber}',
-      style: textStyle,
-    );
+    return Text('${result.flag} ${result.formattedNumber}', style: textStyle);
   }
 }
