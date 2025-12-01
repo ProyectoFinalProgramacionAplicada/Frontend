@@ -16,6 +16,10 @@ class TradeDto {
   final int listingOwnerId;
   final int initiatorUserId;
 
+  // --- NUEVOS CAMPOS PARA IMÁGENES ---
+  final String? requesterAvatarUrl;
+  final String? ownerAvatarUrl;
+
   TradeDto({
     required this.id,
     required this.requesterUserId,
@@ -29,6 +33,9 @@ class TradeDto {
     this.requestedTrueCoins,
     required this.listingOwnerId,
     required this.initiatorUserId,
+    // --- AGREGAR AL CONSTRUCTOR ---
+    this.requesterAvatarUrl,
+    this.ownerAvatarUrl,
   });
 
   factory TradeDto.fromJson(Map<String, dynamic> json) {
@@ -53,9 +60,13 @@ class TradeDto {
       requestedTrueCoins: json['requestedTrueCoins'] != null
           ? (json['requestedTrueCoins'] as num).toDouble()
           : null,
-      // Mapeo de los nuevos campos
+      // Mapeo de los nuevos campos de roles
       listingOwnerId: json['listingOwnerId'] ?? json['ownerUserId'] ?? 0,
       initiatorUserId: json['initiatorUserId'] ?? json['requesterUserId'] ?? 0,
+      
+      // --- MAPEO DE LAS IMÁGENES ---
+      requesterAvatarUrl: json['requesterAvatarUrl'],
+      ownerAvatarUrl: json['ownerAvatarUrl'],
     );
   }
 
@@ -72,5 +83,8 @@ class TradeDto {
     'requestedTrueCoins': requestedTrueCoins,
     'listingOwnerId': listingOwnerId,
     'initiatorUserId': initiatorUserId,
+    // --- AGREGAR AL JSON ---
+    'requesterAvatarUrl': requesterAvatarUrl,
+    'ownerAvatarUrl': ownerAvatarUrl,
   };
 }

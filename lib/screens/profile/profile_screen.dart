@@ -214,9 +214,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return const Scaffold(body: Center(child: Text("Sin sesión")));
     }
 
-    final fullAvatarUrl = user.avatarUrl != null
-        ? '${AppConstants.apiBaseUrl}${user.avatarUrl}'
-        : null;
+String? fullAvatarUrl;
+    if (user.avatarUrl != null) {
+      // Si la URL ya empieza con 'http', es de Azure (o externa) y la usamos tal cual
+      if (user.avatarUrl!.startsWith('http')) {
+        fullAvatarUrl = user.avatarUrl; 
+      } else {
+        // Si no, asumimos que es una ruta relativa antigua y le pegamos el dominio
+        fullAvatarUrl = '${AppConstants.apiBaseUrl}${user.avatarUrl}';
+      }
+    }
 
     return Scaffold(
       appBar: AppBar(

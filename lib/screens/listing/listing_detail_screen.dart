@@ -500,10 +500,12 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                 child: CircleAvatar(
                   radius: 28,
                   backgroundImage: _listing!.ownerAvatarUrl != null
-                      ? NetworkImage(
-                          '${AppConstants.apiBaseUrl}${_listing!.ownerAvatarUrl}',
-                        )
-                      : null,
+                    ? NetworkImage(
+                      _listing!.ownerAvatarUrl!.startsWith('http')
+                        ? _listing!.ownerAvatarUrl!
+                        : '${AppConstants.apiBaseUrl}${_listing!.ownerAvatarUrl}',
+                    )
+    : null,
                   backgroundColor: _ListingDetailStyle.primaryColor.withOpacity(
                     0.1,
                   ),

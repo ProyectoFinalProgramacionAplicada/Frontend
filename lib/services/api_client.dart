@@ -12,7 +12,7 @@ class ApiClient {
     dio = Dio(
       BaseOptions(
         // Backend en Azure (desplegado con LoginResponseDto)
-        baseUrl: 'https://app-251110224714.azurewebsites.net/api',
+        baseUrl: 'http://localhost:5129/api',
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 10),
         headers: {'Content-Type': 'application/json'},

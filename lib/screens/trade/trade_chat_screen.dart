@@ -190,6 +190,10 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
     final isCompleted = currentTrade.status == TradeStatus.Completed;
     final isCancelled = currentTrade.status == TradeStatus.Cancelled;
 
+    final String? otherUserAvatar = isSeller 
+        ? currentTrade.requesterAvatarUrl 
+        : currentTrade.ownerAvatarUrl;
+
     return Scaffold(
       appBar: AppBar(
         title: Column(
@@ -370,17 +374,20 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                       ),
                     ),
                     const SizedBox(width: 8),
+                    // En el AppBar title:
                     CircleAvatar(
-                      backgroundColor: AppColors.primary,
-                      child: IconButton(
-                        icon: const Icon(
-                          Icons.send,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                        onPressed: _sendMessage,
-                      ),
-                    ),
+  radius: 18, // Tamaño pequeño para el input bar
+  backgroundImage: otherUserAvatar != null
+      ? NetworkImage(
+          otherUserAvatar.startsWith('http')
+              ? otherUserAvatar
+              : '${AppConstants.apiBaseUrl}$otherUserAvatar',
+        )
+      : null,
+  child: otherUserAvatar == null 
+      ? const Icon(Icons.person, size: 18) 
+      : null,
+),
                   ],
                 ),
               ),
