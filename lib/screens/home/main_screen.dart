@@ -1,30 +1,97 @@
 import 'dart:async';
-
+import 'dart:convert';
 import 'dart:html' as html show window;
-import 'package:provider/provider.dart';
-import '../../providers/listing_provider.dart';
-import '../../core/app_export.dart';
-import '../../providers/auth_provider.dart';
+
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:provider/provider.dart';
+
+import '../../core/app_export.dart';
+import '../../core/constants/app_colors.dart';
 import '../../dto/listing/listing_create_dto.dart';
 import '../../dto/listing/listing_dto.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:latlong2/latlong.dart';
-import '../../providers/trade_provider.dart';
-import '../../dto/trade/trade_status.dart';
 import '../../dto/trade/trade_dto.dart';
-import '../../providers/wallet_provider.dart';
+import '../../dto/trade/trade_status.dart';
 import '../../dto/wallet/wallet_entry_dto.dart';
 import '../../dto/wallet/wallet_entry_type.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:geocoding/geocoding.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:truekapp/screens/listing/pick_location_map_screen.dart';
-import 'package:truekapp/screens/wallet/wallet_screen.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/listing_provider.dart';
+import '../../providers/trade_provider.dart';
+import '../../providers/wallet_provider.dart';
+import '../listing/pick_location_map_screen.dart';
 import '../p2p/p2p_market_screen.dart';
-//import 'dart:io'; // Para mostrar el archivo de imagen
+import '../wallet/wallet_screen.dart';
+
+/// Constantes de estilo para Main Screen - consistencia visual con Admin Panel
+class _MainScreenStyle {
+  // Colores
+  static const Color backgroundColor = Color(0xFFF8FAFC);
+  static const Color cardColor = Colors.white;
+  static const Color subtitleColor = Color(0xFF64748B);
+
+  // Bordes y sombras
+  static const double borderRadius = 16.0;
+  static const double smallBorderRadius = 12.0;
+
+  static List<BoxShadow> get softShadow => [
+    BoxShadow(
+      color: Colors.black.withOpacity(0.04),
+      blurRadius: 12,
+      offset: const Offset(0, 4),
+    ),
+  ];
+
+  static List<BoxShadow> get elevatedShadow => [
+    BoxShadow(
+      color: Colors.black.withOpacity(0.08),
+      blurRadius: 20,
+      offset: const Offset(0, 8),
+    ),
+  ];
+
+  // Spacing
+  static const double pagePadding = 20.0;
+  static const double sectionSpacing = 24.0;
+  static const double itemSpacing = 16.0;
+
+  // Tipografía
+  static TextStyle get headingStyle => GoogleFonts.inter(
+    fontSize: 24,
+    fontWeight: FontWeight.w700,
+    color: const Color(0xFF0F172A),
+  );
+
+  static TextStyle get sectionTitleStyle => GoogleFonts.inter(
+    fontSize: 18,
+    fontWeight: FontWeight.w600,
+    color: const Color(0xFF0F172A),
+  );
+
+  static TextStyle get bodyStyle => GoogleFonts.inter(
+    fontSize: 14,
+    fontWeight: FontWeight.w400,
+    color: const Color(0xFF475569),
+  );
+
+  static TextStyle get labelStyle => GoogleFonts.inter(
+    fontSize: 12,
+    fontWeight: FontWeight.w500,
+    color: subtitleColor,
+  );
+
+  static TextStyle get valueStyle => GoogleFonts.inter(
+    fontSize: 20,
+    fontWeight: FontWeight.w700,
+    color: const Color(0xFF0F172A),
+  );
+}
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -33,8 +100,10 @@ class MainScreen extends StatefulWidget {
   State<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   int _currentIndex = 0;
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
 
   List<Widget> get _navPages => [
     _HomeTab(),
@@ -45,54 +114,157 @@ class _MainScreenState extends State<MainScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeOut,
+    );
+    _fadeController.forward();
+  }
+
+  @override
+  void dispose() {
+    _fadeController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
 
     return Scaffold(
+      backgroundColor: _MainScreenStyle.backgroundColor,
       appBar: AppBar(
-        title: Text('TruekApp'),
-        leading: IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: () => _showMenu(context, auth),
+        backgroundColor: _MainScreenStyle.backgroundColor,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        title: Text(
+          'TruekApp',
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w700,
+            fontSize: 22,
+            color: const Color(0xFF0F172A),
+          ),
         ),
-        //actions: [
-        //IconButton(
-        //tooltip: 'Debug token',
-        //icon: const Icon(Icons.bug_report_outlined),
-        //onPressed: () => Navigator.pushNamed(context, '/debug-token'),
-        //),
-        //], Revisarrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr
+        leading: Container(
+          margin: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: _MainScreenStyle.softShadow,
+          ),
+          child: IconButton(
+            icon: const Icon(Icons.menu_rounded, color: Color(0xFF0F172A)),
+            onPressed: () => _showMenu(context, auth),
+          ),
+        ),
       ),
-      body: _navPages[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (i) => setState(() {
-          _currentIndex = i;
-        }),
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            label: 'Home',
+      body: FadeTransition(
+        opacity: _fadeAnimation,
+        child: _navPages[_currentIndex],
+      ),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 20,
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildNavItem(
+                  0,
+                  Icons.home_outlined,
+                  Icons.home_rounded,
+                  'Home',
+                ),
+                _buildNavItem(
+                  1,
+                  Icons.add_circle_outline,
+                  Icons.add_circle_rounded,
+                  'Publicar',
+                ),
+                _buildNavItem(
+                  2,
+                  Icons.chat_bubble_outline,
+                  Icons.chat_bubble_rounded,
+                  'Mensajes',
+                ),
+                _buildNavItem(
+                  3,
+                  Icons.account_balance_wallet_outlined,
+                  Icons.account_balance_wallet_rounded,
+                  'Billetera',
+                ),
+                _buildNavItem(
+                  4,
+                  Icons.swap_horiz_outlined,
+                  Icons.swap_horiz_rounded,
+                  'Mercado',
+                ),
+              ],
+            ),
           ),
-          // BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Explorar'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.add_circle_outline),
-            label: 'Publicar',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.chat_bubble_outline),
-            label: 'Mensajes',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.account_balance_wallet_outlined),
-            label: 'Billetera',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.swap_horiz_outlined),
-            label: 'Mercado',
-          ),
-        ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem(
+    int index,
+    IconData icon,
+    IconData activeIcon,
+    String label,
+  ) {
+    final isSelected = _currentIndex == index;
+    return InkWell(
+      onTap: () {
+        setState(() => _currentIndex = index);
+        _fadeController.reset();
+        _fadeController.forward();
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary.withOpacity(0.1)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isSelected ? activeIcon : icon,
+              color: isSelected ? AppColors.primary : const Color(0xFF94A3B8),
+              size: 24,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                color: isSelected ? AppColors.primary : const Color(0xFF94A3B8),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -100,56 +272,118 @@ class _MainScreenState extends State<MainScreen> {
   void _showMenu(BuildContext context, AuthProvider auth) {
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent,
       builder: (_) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // --- OPCIÓN MIS TRUEQUES ---
-              ListTile(
-                leading: const Icon(Icons.swap_horiz),
-                title: const Text('Mis trueques'),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.pushNamed(context, AppRoutes.tradeList);
-                },
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Handle bar
+                  Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  // Menu items
+                  _buildMenuItem(
+                    icon: Icons.swap_horiz_rounded,
+                    iconColor: AppColors.primary,
+                    title: 'Mis trueques',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, AppRoutes.tradeList);
+                    },
+                  ),
+                  _buildMenuItem(
+                    icon: Icons.add_circle_outline_rounded,
+                    iconColor: const Color(0xFF3B82F6),
+                    title: 'Crear trueque',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, AppRoutes.trade);
+                    },
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 8,
+                    ),
+                    child: Divider(color: Colors.grey[200]),
+                  ),
+                  _buildMenuItem(
+                    icon: Icons.person_outline_rounded,
+                    iconColor: const Color(0xFF8B5CF6),
+                    title: 'Ver perfil',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, AppRoutes.profile);
+                    },
+                  ),
+                  _buildMenuItem(
+                    icon: Icons.logout_rounded,
+                    iconColor: const Color(0xFFEF4444),
+                    title: 'Cerrar sesión',
+                    onTap: () {
+                      Navigator.pop(context);
+                      auth.logout();
+                      Navigator.pushReplacementNamed(context, '/login');
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                ],
               ),
-              // --- OPCIÓN CREAR TRUEQUE ---
-              ListTile(
-                leading: const Icon(Icons.add_circle_outline),
-                title: const Text('Crear trueque'),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.pushNamed(context, AppRoutes.trade);
-                },
-              ),
-              const Divider(),
-              // --- OPCIÓN PERFIL CORREGIDA ---
-              ListTile(
-                leading: const Icon(Icons.person),
-                title: const Text('Ver perfil'),
-                onTap: () {
-                  Navigator.pop(context); // Cierra el menú
-                  Navigator.pushNamed(
-                    context,
-                    AppRoutes.profile,
-                  ); // Va a la pantalla nueva
-                },
-              ),
-              // --- OPCIÓN CERRAR SESIÓN (Se mantiene igual) ---
-              ListTile(
-                leading: const Icon(Icons.logout),
-                title: const Text('Cerrar sesión'),
-                onTap: () {
-                  Navigator.pop(context);
-                  auth.logout();
-                  Navigator.pushReplacementNamed(context, '/login');
-                },
-              ),
-            ],
+            ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildMenuItem({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: iconColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: iconColor, size: 22),
+            ),
+            const SizedBox(width: 16),
+            Text(
+              title,
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF1E293B),
+              ),
+            ),
+            const Spacer(),
+            Icon(Icons.chevron_right_rounded, color: Colors.grey[400]),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -365,458 +599,660 @@ class _HomeTabState extends State<_HomeTab> {
             ? 0
             : _featuredIndex % totalFeatured;
 
-        // Volvemos al padding estándar (sin el parche conservador de +100px)
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // (Esta parte del balance se mantiene igual)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Ubicación: $_currentCity',
-                        style: TextStyle(
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final screenWidth = constraints.maxWidth;
+            // Breakpoints para responsive
+            final isDesktop = screenWidth >= 1200;
+            final isTablet = screenWidth >= 900 && screenWidth < 1200;
+
+            // Padding: mínimo en desktop para que el banner ocupe todo el ancho
+            final horizontalPadding = isDesktop
+                ? 24.0
+                : (isTablet ? 20.0 : _MainScreenStyle.pagePadding);
+            // Reducir spacing vertical en desktop
+            final sectionSpacing = isDesktop
+                ? 20.0
+                : (isTablet ? 22.0 : _MainScreenStyle.sectionSpacing);
+
+            return Container(
+              color: _MainScreenStyle.backgroundColor,
+              child: SingleChildScrollView(
+                padding: EdgeInsets.symmetric(
+                  horizontal: horizontalPadding,
+                  vertical: _MainScreenStyle.pagePadding,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Header banner - ocupa todo el ancho disponible
+                    _buildHeader(auth),
+                    SizedBox(height: sectionSpacing),
+
+                    // Barra de búsqueda - ancho completo
+                    _buildSearchBar(listingProvider),
+                    SizedBox(height: sectionSpacing),
+
+                    // Sección Destacados
+                    _buildSectionTitle('Destacados', Icons.star_rounded),
+                    const SizedBox(height: 12),
+                    _buildFeaturedSection(
+                      listingProvider,
+                      currentFeaturedIndex,
+                    ),
+
+                    SizedBox(height: sectionSpacing),
+
+                    // Sección Cerca de ti
+                    _buildSectionTitle(
+                      'Cerca de ti',
+                      Icons.location_on_rounded,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildNearbySection(listingProvider),
+
+                    SizedBox(height: sectionSpacing),
+
+                    // Sección Recientes
+                    _buildSectionTitle('Recientes', Icons.access_time_rounded),
+                    const SizedBox(height: 12),
+                    _buildRecentGrid(listingProvider, screenWidth),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildHeader(AuthProvider auth) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.primary, AppColors.primary.withOpacity(0.85)],
+        ),
+        borderRadius: BorderRadius.circular(_MainScreenStyle.borderRadius),
+        boxShadow: _MainScreenStyle.elevatedShadow,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.location_on_rounded,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        _currentCity,
+                        style: GoogleFonts.inter(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'TrueCoin Balance',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white70,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '${auth.user?.trueCoinBalance ?? 0}',
+                      style: GoogleFonts.inter(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text(
+                        'TrueCoins',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white70,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      const Text(
-                        'TrueCoin Balance',
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                  Card(
-                    color: AppColors.primary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      child: Column(
-                        children: [
-                          Text(
-                            '${auth.user?.trueCoinBalance ?? 120}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                            ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(
+              Icons.monetization_on_rounded,
+              color: Colors.white,
+              size: 40,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchBar(ListingProvider listingProvider) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(_MainScreenStyle.borderRadius),
+        boxShadow: _MainScreenStyle.softShadow,
+      ),
+      child: TextField(
+        controller: _searchController,
+        style: GoogleFonts.inter(fontSize: 15),
+        decoration: InputDecoration(
+          prefixIcon: Icon(Icons.search_rounded, color: Colors.grey[400]),
+          hintText: 'Buscar productos...',
+          hintStyle: GoogleFonts.inter(color: Colors.grey[400]),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(_MainScreenStyle.borderRadius),
+            borderSide: BorderSide.none,
+          ),
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 16,
+          ),
+        ),
+        onSubmitted: (query) {
+          listingProvider.fetchCatalog(q: query);
+        },
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title, IconData icon) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: AppColors.primary, size: 18),
+        ),
+        const SizedBox(width: 12),
+        Text(title, style: _MainScreenStyle.sectionTitleStyle),
+      ],
+    );
+  }
+
+  Widget _buildFeaturedSection(
+    ListingProvider listingProvider,
+    int currentFeaturedIndex,
+  ) {
+    return SizedBox(
+      height: 230,
+      child: listingProvider.isLoading
+          ? Center(
+              child: CircularProgressIndicator(
+                color: AppColors.primary,
+                strokeWidth: 3,
+              ),
+            )
+          : listingProvider.listings.isEmpty
+          ? _buildEmptyState(
+              icon: Icons.star_outline_rounded,
+              message: 'Sin destacados',
+              onRefresh: () => listingProvider.fetchCatalog(),
+            )
+          : AnimatedSwitcher(
+              duration: const Duration(milliseconds: 400),
+              switchInCurve: Curves.easeOut,
+              switchOutCurve: Curves.easeIn,
+              child: _FeaturedListingCard(
+                key: ValueKey(
+                  'featured-${listingProvider.listings[currentFeaturedIndex].id}-$currentFeaturedIndex',
+                ),
+                listing: listingProvider.listings[currentFeaturedIndex],
+                onTap: () {
+                  Navigator.pushNamed(
+                    context,
+                    AppRoutes.listingDetail,
+                    arguments:
+                        listingProvider.listings[currentFeaturedIndex].id,
+                  );
+                },
+              ),
+            ),
+    );
+  }
+
+  Widget _buildEmptyState({
+    required IconData icon,
+    required String message,
+    required VoidCallback onRefresh,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(_MainScreenStyle.borderRadius),
+        boxShadow: _MainScreenStyle.softShadow,
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 48, color: Colors.grey[300]),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              style: GoogleFonts.inter(fontSize: 14, color: Colors.grey[500]),
+            ),
+            const SizedBox(height: 16),
+            TextButton.icon(
+              onPressed: onRefresh,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Recargar'),
+              style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNearbySection(ListingProvider listingProvider) {
+    return SizedBox(
+      height: 260,
+      child: listingProvider.isLoadingNearby
+          ? Center(
+              child: CircularProgressIndicator(
+                color: AppColors.primary,
+                strokeWidth: 3,
+              ),
+            )
+          : listingProvider.nearbyListings.isEmpty
+          ? _buildEmptyState(
+              icon: Icons.location_off_rounded,
+              message: 'Sin resultados cerca de ti',
+              onRefresh: () async {
+                await Provider.of<ListingProvider>(
+                  context,
+                  listen: false,
+                ).fetchNearbyListings(
+                  latitude: _currentPosition?.latitude ?? 0,
+                  longitude: _currentPosition?.longitude ?? 0,
+                  radius: 25,
+                );
+              },
+            )
+          : ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: listingProvider.nearbyListings.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 16),
+              itemBuilder: (context, idx) {
+                final listing = listingProvider.nearbyListings[idx];
+                final distanceLabel = _formatDistance(listing);
+                return _buildNearbyCard(listing, distanceLabel);
+              },
+            ),
+    );
+  }
+
+  Widget _buildNearbyCard(ListingDto listing, String? distanceLabel) {
+    return GestureDetector(
+      onTap: () => Navigator.pushNamed(
+        context,
+        AppRoutes.listingDetail,
+        arguments: listing.id,
+      ),
+      child: Container(
+        width: 280,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(_MainScreenStyle.borderRadius),
+          boxShadow: _MainScreenStyle.softShadow,
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AspectRatio(
+              aspectRatio: 16 / 10,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.network(
+                    listing.imageUrl,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, progress) {
+                      if (progress == null) return child;
+                      return Container(
+                        color: Colors.grey[100],
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.primary,
+                            strokeWidth: 2,
                           ),
-                          const SizedBox(height: 4),
-                          const Text(
-                            'TrueCoins',
-                            style: TextStyle(
+                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stack) => Container(
+                      color: Colors.grey[100],
+                      child: const Center(
+                        child: Icon(
+                          Icons.image_not_supported_outlined,
+                          color: Colors.grey,
+                          size: 36,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned.fill(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withOpacity(0.6),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    left: 12,
+                    right: 12,
+                    bottom: 12,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          listing.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.location_on_rounded,
+                              size: 14,
                               color: Colors.white70,
-                              fontSize: 12,
                             ),
-                          ),
-                        ],
-                      ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                distanceLabel ?? 'Cerca de ti',
+                                style: GoogleFonts.inter(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-
-              // TextField de Búsqueda funcional
-              TextField(
-                controller: _searchController,
-                decoration: const InputDecoration(
-                  prefixIcon: Icon(Icons.search),
-                  hintText: 'Buscar productos...',
-                ),
-                onSubmitted: (query) {
-                  // Al presionar Enter, llamamos al fetch con el filtro 'q'
-                  listingProvider.fetchCatalog(q: query);
-                },
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Destacados',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 8),
-
-              // --- CONTENIDO DINÁMICO (Destacados) ---
-              SizedBox(
-                height: 230,
-                child: listingProvider.isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : listingProvider.listings.isEmpty
-                    ? Center(
-                        child: TextButton.icon(
-                          onPressed: () => listingProvider.fetchCatalog(),
-                          icon: const Icon(Icons.refresh),
-                          label: const Text('Sin destacados. Recargar'),
-                        ),
-                      )
-                    : AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 400),
-                        switchInCurve: Curves.easeOut,
-                        switchOutCurve: Curves.easeIn,
-                        child: _FeaturedListingCard(
-                          key: ValueKey(
-                            'featured-${listingProvider.listings[currentFeaturedIndex].id}-$currentFeaturedIndex',
-                          ),
-                          listing:
-                              listingProvider.listings[currentFeaturedIndex],
-                          onTap: () {
-                            Navigator.pushNamed(
-                              context,
-                              AppRoutes.listingDetail,
-                              arguments: listingProvider
-                                  .listings[currentFeaturedIndex]
-                                  .id,
-                            );
-                          },
-                        ),
-                      ),
-              ),
-
-              SizedBox(
-                height: 290, // altura fija, ajusta a lo que necesites
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Cerca de ti',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    const SizedBox(height: 8),
-                    Expanded(
-                      child: listingProvider.isLoadingNearby
-                          ? const Center(child: CircularProgressIndicator())
-                          : listingProvider.nearbyListings.isEmpty
-                          ? Center(
-                              child: TextButton.icon(
-                                onPressed: () async {
-                                  await Provider.of<ListingProvider>(
-                                    context,
-                                    listen: false,
-                                  ).fetchNearbyListings(
-                                    latitude: _currentPosition?.latitude ?? 0,
-                                    longitude: _currentPosition?.longitude ?? 0,
-                                    radius: 25,
-                                  );
-                                },
-                                icon: const Icon(Icons.refresh),
-                                label: const Text(
-                                  'Sin resultados cerca de ti. Recargar',
-                                ),
-                              ),
-                            )
-                          : ListView.separated(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: listingProvider.nearbyListings.length,
-                              separatorBuilder: (_, __) =>
-                                  const SizedBox(width: 12),
-                              itemBuilder: (context, idx) {
-                                final listing =
-                                    listingProvider.nearbyListings[idx];
-                                final distanceLabel = _formatDistance(listing);
-                                return GestureDetector(
-                                  onTap: () => Navigator.pushNamed(
-                                    context,
-                                    AppRoutes.listingDetail,
-                                    arguments: listing.id,
-                                  ),
-                                  child: SizedBox(
-                                    width: 300,
-                                    child: Card(
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                      clipBehavior: Clip.antiAlias,
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          AspectRatio(
-                                            aspectRatio: 16 / 11,
-                                            child: ClipRRect(
-                                              borderRadius:
-                                                  BorderRadius.circular(0),
-                                              child: Stack(
-                                                fit: StackFit.expand,
-                                                children: [
-                                                  Image.network(
-                                                    listing.imageUrl,
-                                                    fit: BoxFit.cover,
-                                                    loadingBuilder:
-                                                        (
-                                                          context,
-                                                          child,
-                                                          progress,
-                                                        ) {
-                                                          if (progress ==
-                                                              null) {
-                                                            return child;
-                                                          }
-                                                          return Container(
-                                                            color: Colors
-                                                                .grey[200],
-                                                            child: const Center(
-                                                              child:
-                                                                  CircularProgressIndicator(),
-                                                            ),
-                                                          );
-                                                        },
-                                                    errorBuilder:
-                                                        (
-                                                          context,
-                                                          error,
-                                                          stack,
-                                                        ) => Container(
-                                                          color:
-                                                              Colors.grey[200],
-                                                          child: const Center(
-                                                            child: Icon(
-                                                              Icons
-                                                                  .image_not_supported_outlined,
-                                                              color:
-                                                                  Colors.grey,
-                                                              size: 36,
-                                                            ),
-                                                          ),
-                                                        ),
-                                                  ),
-                                                  Positioned.fill(
-                                                    child: DecoratedBox(
-                                                      decoration: BoxDecoration(
-                                                        gradient: LinearGradient(
-                                                          begin: Alignment
-                                                              .topCenter,
-                                                          end: Alignment
-                                                              .bottomCenter,
-                                                          colors: [
-                                                            Colors.transparent,
-                                                            Colors.black
-                                                                .withOpacity(
-                                                                  0.55,
-                                                                ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  Positioned(
-                                                    left: 12,
-                                                    right: 12,
-                                                    bottom: 12,
-                                                    child: Column(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .start,
-                                                      children: [
-                                                        Text(
-                                                          listing.title,
-                                                          maxLines: 2,
-                                                          overflow: TextOverflow
-                                                              .ellipsis,
-                                                          style:
-                                                              const TextStyle(
-                                                                color: Colors
-                                                                    .white,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w700,
-                                                              ),
-                                                        ),
-                                                        const SizedBox(
-                                                          height: 6,
-                                                        ),
-                                                        Row(
-                                                          children: [
-                                                            const Icon(
-                                                              Icons.location_on,
-                                                              size: 14,
-                                                              color: Colors
-                                                                  .white70,
-                                                            ),
-                                                            const SizedBox(
-                                                              width: 6,
-                                                            ),
-                                                            Flexible(
-                                                              child: Text(
-                                                                distanceLabel ??
-                                                                    'Cerca de ti',
-                                                                style: const TextStyle(
-                                                                  color: Colors
-                                                                      .white70,
-                                                                  fontSize: 12,
-                                                                ),
-                                                                overflow:
-                                                                    TextOverflow
-                                                                        .ellipsis,
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.all(12),
-                                            child: Row(
-                                              children: [
-                                                Icon(
-                                                  Icons.monetization_on,
-                                                  size: 18,
-                                                  color: AppColors.primary,
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Text(
-                                                  '${_formatCoins(listing.trueCoinValue)} coins',
-                                                  style: const TextStyle(
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
+                    child: Icon(
+                      Icons.monetization_on_rounded,
+                      size: 18,
+                      color: AppColors.primary,
                     ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 16),
-              const Text(
-                'Recientes',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 8),
-
-              // --- CONTENIDO DINÁMICO (Recientes) ---
-              listingProvider.isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: listingProvider.listings.length,
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 16,
-                            mainAxisSpacing: 16,
-                            childAspectRatio: 1.0,
-                          ),
-                      itemBuilder: (context, index) {
-                        final listing = listingProvider.listings[index];
-                        final distanceLabel = _formatDistance(listing);
-                        return GestureDetector(
-                          onTap: () {
-                            Navigator.pushNamed(
-                              context,
-                              AppRoutes.listingDetail,
-                              arguments: listing.id,
-                            );
-                          },
-                          child: Card(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            clipBehavior: Clip.antiAlias,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                AspectRatio(
-                                  aspectRatio: 16 / 11,
-                                  child: Ink.image(
-                                    image: NetworkImage(listing.imageUrl),
-                                    fit: BoxFit.cover,
-                                    child: Container(),
-                                    onImageError: (_, __) {},
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.all(12),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        listing.title,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            Icons.monetization_on,
-                                            size: 18,
-                                            color: AppColors.primary,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            '${_formatCoins(listing.trueCoinValue)} coins',
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Row(
-                                        children: [
-                                          const Icon(
-                                            Icons.location_on,
-                                            size: 16,
-                                            color: Colors.grey,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Expanded(
-                                            child: Text(
-                                              distanceLabel ?? 'Cerca de ti',
-                                              style: const TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.grey,
-                                              ),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    '${_formatCoins(listing.trueCoinValue)} coins',
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      color: const Color(0xFF1E293B),
                     ),
-            ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecentGrid(ListingProvider listingProvider, double screenWidth) {
+    if (listingProvider.isLoading) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: CircularProgressIndicator(
+            color: AppColors.primary,
+            strokeWidth: 3,
           ),
+        ),
+      );
+    }
+
+    // Calcular columnas según breakpoints
+    // AspectRatio ajustado para tipografía más grande
+    int crossAxisCount;
+    double childAspectRatio;
+    double spacing;
+
+    if (screenWidth >= 1200) {
+      // Desktop: 4 columnas
+      crossAxisCount = 4;
+      childAspectRatio = 0.72;
+      spacing = 16;
+    } else if (screenWidth >= 900) {
+      // Tablet: 3 columnas
+      crossAxisCount = 3;
+      childAspectRatio = 0.70;
+      spacing = 14;
+    } else {
+      // Mobile: 2 columnas
+      crossAxisCount = 2;
+      childAspectRatio = 0.68;
+      spacing = 12;
+    }
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: listingProvider.listings.length,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        crossAxisSpacing: spacing,
+        mainAxisSpacing: spacing,
+        childAspectRatio: childAspectRatio,
+      ),
+      itemBuilder: (context, index) {
+        final listing = listingProvider.listings[index];
+        final distanceLabel = _formatDistance(listing);
+        return _buildRecentCard(listing, distanceLabel);
+      },
+    );
+  }
+
+  Widget _buildRecentCard(ListingDto listing, String? distanceLabel) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushNamed(
+          context,
+          AppRoutes.listingDetail,
+          arguments: listing.id,
         );
       },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(_MainScreenStyle.borderRadius),
+          boxShadow: _MainScreenStyle.softShadow,
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Imagen con aspect ratio fijo
+            AspectRatio(
+              aspectRatio: 1.0,
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(16),
+                ),
+                child: Image.network(
+                  listing.imageUrl,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, progress) {
+                    if (progress == null) return child;
+                    return Container(
+                      color: Colors.grey[100],
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.primary,
+                          strokeWidth: 2,
+                        ),
+                      ),
+                    );
+                  },
+                  errorBuilder: (context, error, stack) => Container(
+                    color: Colors.grey[100],
+                    child: const Center(
+                      child: Icon(
+                        Icons.image_not_supported_outlined,
+                        color: Colors.grey,
+                        size: 32,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            // Contenido compacto - sin espacio extra
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  Text(
+                    listing.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                      color: const Color(0xFF1E293B),
+                      height: 1.25,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.monetization_on_rounded,
+                        size: 16,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          '${_formatCoins(listing.trueCoinValue)} coins',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            color: AppColors.primary,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.location_on_rounded,
+                        size: 14,
+                        color: Colors.grey[400],
+                      ),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          distanceLabel ?? 'Cerca de ti',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w400,
+                            color: Colors.grey[500],
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -839,152 +1275,183 @@ class _FeaturedListingCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Positioned.fill(
-              child: Image.network(
-                listing.imageUrl,
-                fit: BoxFit.cover,
-                loadingBuilder: (context, child, progress) {
-                  if (progress == null) return child;
-                  return Container(
-                    color: Colors.grey[300],
-                    child: const Center(child: CircularProgressIndicator()),
-                  );
-                },
-                errorBuilder: (context, error, stackTrace) => Container(
-                  color: Colors.grey[200],
-                  child: const Icon(
-                    Icons.image_not_supported_outlined,
-                    size: 42,
-                    color: Colors.grey,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(_MainScreenStyle.borderRadius),
+          boxShadow: _MainScreenStyle.elevatedShadow,
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(_MainScreenStyle.borderRadius),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Positioned.fill(
+                child: Image.network(
+                  listing.imageUrl,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, progress) {
+                    if (progress == null) return child;
+                    return Container(
+                      color: Colors.grey[100],
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.primary,
+                          strokeWidth: 3,
+                        ),
+                      ),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    color: Colors.grey[100],
+                    child: const Icon(
+                      Icons.image_not_supported_outlined,
+                      size: 42,
+                      color: Colors.grey,
+                    ),
                   ),
                 ),
               ),
-            ),
-            Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.black.withValues(alpha: 0.15),
-                      Colors.black.withValues(alpha: 0.75),
-                    ],
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black.withOpacity(0.1),
+                        Colors.black.withOpacity(0.7),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Align(
-                    alignment: Alignment.topRight,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.orangeAccent.withValues(alpha: 0.9),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Text(
-                        'FEATURED',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    listing.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on,
-                        color: Colors.white70,
-                        size: 18,
-                      ),
-                      const SizedBox(width: 6),
-                      const Expanded(
-                        child: Text(
-                          'Cerca de ti',
-                          style: TextStyle(color: Colors.white70, fontSize: 14),
-                        ),
-                      ),
-                      Container(
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Align(
+                      alignment: Alignment.topRight,
+                      child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
+                          horizontal: 14,
+                          vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.15),
+                          gradient: LinearGradient(
+                            colors: [
+                              const Color(0xFFFF9500),
+                              const Color(0xFFFF6B00),
+                            ],
+                          ),
                           borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFFF9500).withOpacity(0.4),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              Icons.monetization_on,
-                              color: Colors.amber[300],
-                              size: 18,
+                            const Icon(
+                              Icons.star_rounded,
+                              color: Colors.white,
+                              size: 16,
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              '${_formatCoins(listing.trueCoinValue)} TrueCoins',
-                              style: const TextStyle(
+                              'DESTACADO',
+                              style: GoogleFonts.inter(
                                 color: Colors.white,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
+                                letterSpacing: 0.5,
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                    const Spacer(),
+                    Text(
+                      listing.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.location_on_rounded,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Cerca de ti',
+                            style: GoogleFonts.inter(
+                              color: Colors.white70,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.2),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.monetization_on_rounded,
+                                color: Colors.amber[300],
+                                size: 18,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                '${_formatCoins(listing.trueCoinValue)} TrueCoins',
+                                style: GoogleFonts.inter(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ignore: unused_element
-class _BrowseTab extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: const [
-          Icon(Icons.explore, size: 64, color: Colors.grey),
-          SizedBox(height: 12),
-          Text(
-            'Explorar',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -1195,108 +1662,432 @@ class _AddItemTabState extends State<_AddItemTab> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
+    return Container(
+      color: _MainScreenStyle.backgroundColor,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(_MainScreenStyle.pagePadding),
+        child: Form(
+          key: _formKey,
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(labelText: 'Título'),
-                validator: (v) =>
-                    v == null || v.isEmpty ? 'El título es requerido' : null,
-              ),
+              // Header
+              Text('Nueva Publicación', style: _MainScreenStyle.headingStyle),
               const SizedBox(height: 8),
-              TextFormField(
-                controller: _descController,
-                decoration: const InputDecoration(labelText: 'Descripción'),
-                maxLines: 3,
+              Text(
+                'Comparte algo para intercambiar',
+                style: _MainScreenStyle.bodyStyle,
               ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _valueController,
-                decoration: const InputDecoration(
-                  labelText: 'Valor (TrueCoins)',
-                ),
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-                ],
-                validator: (v) =>
-                    v == null || v.isEmpty ? 'El valor es requerido' : null,
-              ),
-              const SizedBox(height: 16),
+              const SizedBox(height: _MainScreenStyle.sectionSpacing),
 
-              // --- MODIFICADO: UI para seleccionar imagen ---
+              // Formulario en tarjeta
               Container(
-                width: double.infinity,
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade400),
-                  borderRadius: BorderRadius.circular(12),
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(
+                    _MainScreenStyle.borderRadius,
+                  ),
+                  boxShadow: _MainScreenStyle.softShadow,
                 ),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (_imageBytes == null)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 40.0),
-                        child: Icon(
-                          Icons.image_outlined,
-                          size: 60,
-                          color: Colors.grey,
+                    // Campo Título
+                    Text('Título', style: _MainScreenStyle.labelStyle),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _titleController,
+                      style: GoogleFonts.inter(fontSize: 15),
+                      decoration: InputDecoration(
+                        hintText: '¿Qué estás ofreciendo?',
+                        hintStyle: GoogleFonts.inter(color: Colors.grey[400]),
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(
+                            _MainScreenStyle.smallBorderRadius,
+                          ),
+                          borderSide: BorderSide.none,
                         ),
-                      )
-                    else
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.memory(
-                            _imageBytes!,
-                            height: 200,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(
+                            _MainScreenStyle.smallBorderRadius,
+                          ),
+                          borderSide: BorderSide(color: Colors.grey[200]!),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(
+                            _MainScreenStyle.smallBorderRadius,
+                          ),
+                          borderSide: BorderSide(
+                            color: AppColors.primary,
+                            width: 2,
                           ),
                         ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
                       ),
-                    TextButton.icon(
-                      onPressed: _pickImage,
-                      icon: const Icon(Icons.upload_file),
-                      label: Text(
-                        _selectedImage == null
-                            ? 'Seleccionar Imagen'
-                            : 'Cambiar Imagen',
+                      validator: (v) => v == null || v.isEmpty
+                          ? 'El título es requerido'
+                          : null,
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Campo Descripción
+                    Text('Descripción', style: _MainScreenStyle.labelStyle),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _descController,
+                      style: GoogleFonts.inter(fontSize: 15),
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        hintText: 'Describe el artículo en detalle...',
+                        hintStyle: GoogleFonts.inter(color: Colors.grey[400]),
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(
+                            _MainScreenStyle.smallBorderRadius,
+                          ),
+                          borderSide: BorderSide.none,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(
+                            _MainScreenStyle.smallBorderRadius,
+                          ),
+                          borderSide: BorderSide(color: Colors.grey[200]!),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(
+                            _MainScreenStyle.smallBorderRadius,
+                          ),
+                          borderSide: BorderSide(
+                            color: AppColors.primary,
+                            width: 2,
+                          ),
+                        ),
+                        contentPadding: const EdgeInsets.all(16),
                       ),
                     ),
+                    const SizedBox(height: 20),
+
+                    // Campo Valor
+                    Text(
+                      'Valor (TrueCoins)',
+                      style: _MainScreenStyle.labelStyle,
+                    ),
                     const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _valueController,
+                      style: GoogleFonts.inter(fontSize: 15),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(
+                          RegExp(r'^\d+\.?\d{0,2}'),
+                        ),
+                      ],
+                      decoration: InputDecoration(
+                        hintText: '0.00',
+                        hintStyle: GoogleFonts.inter(color: Colors.grey[400]),
+                        prefixIcon: Container(
+                          padding: const EdgeInsets.all(12),
+                          child: Icon(
+                            Icons.monetization_on_rounded,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(
+                            _MainScreenStyle.smallBorderRadius,
+                          ),
+                          borderSide: BorderSide.none,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(
+                            _MainScreenStyle.smallBorderRadius,
+                          ),
+                          borderSide: BorderSide(color: Colors.grey[200]!),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(
+                            _MainScreenStyle.smallBorderRadius,
+                          ),
+                          borderSide: BorderSide(
+                            color: AppColors.primary,
+                            width: 2,
+                          ),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                      ),
+                      validator: (v) => v == null || v.isEmpty
+                          ? 'El valor es requerido'
+                          : null,
+                    ),
                   ],
                 ),
               ),
-              // --- FIN DE MODIFICACIÓN DE UI ---
 
-              // --- Botón para seleccionar ubicación ---
-              ElevatedButton.icon(
-                onPressed: _pickLocation,
-                icon: const Icon(Icons.map),
-                label: Text(
-                  _selectedLocation == null
-                      ? "Seleccionar ubicación en mapa"
-                      : "Ubicación seleccionada",
+              const SizedBox(height: _MainScreenStyle.sectionSpacing),
+
+              // Imagen
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(
+                    _MainScreenStyle.borderRadius,
+                  ),
+                  boxShadow: _MainScreenStyle.softShadow,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(
+                            Icons.image_rounded,
+                            color: AppColors.primary,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Imagen del artículo',
+                          style: _MainScreenStyle.sectionTitleStyle,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    GestureDetector(
+                      onTap: _pickImage,
+                      child: Container(
+                        width: double.infinity,
+                        height: _imageBytes == null ? 160 : 220,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(
+                            _MainScreenStyle.smallBorderRadius,
+                          ),
+                          border: Border.all(
+                            color: _imageBytes == null
+                                ? Colors.grey[300]!
+                                : AppColors.primary,
+                            width: _imageBytes == null ? 1 : 2,
+                            style: _imageBytes == null
+                                ? BorderStyle.solid
+                                : BorderStyle.solid,
+                          ),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: _imageBytes == null
+                            ? Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[200],
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      Icons.add_photo_alternate_outlined,
+                                      size: 36,
+                                      color: Colors.grey[500],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'Toca para seleccionar imagen',
+                                    style: GoogleFonts.inter(
+                                      color: Colors.grey[500],
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  Image.memory(_imageBytes!, fit: BoxFit.cover),
+                                  Positioned(
+                                    right: 8,
+                                    top: 8,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.black54,
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: IconButton(
+                                        icon: const Icon(
+                                          Icons.edit,
+                                          color: Colors.white,
+                                          size: 20,
+                                        ),
+                                        onPressed: _pickImage,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: _MainScreenStyle.sectionSpacing),
 
-              // Botón de carga dinámico
-              _isLoading
-                  ? const CircularProgressIndicator()
-                  : ElevatedButton(
-                      onPressed: _handlePublish,
-                      child: const Text('Publicar'),
+              // Ubicación
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(
+                    _MainScreenStyle.borderRadius,
+                  ),
+                  boxShadow: _MainScreenStyle.softShadow,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF3B82F6).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                            Icons.location_on_rounded,
+                            color: Color(0xFF3B82F6),
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Ubicación',
+                          style: _MainScreenStyle.sectionTitleStyle,
+                        ),
+                      ],
                     ),
+                    const SizedBox(height: 16),
+                    InkWell(
+                      onTap: _pickLocation,
+                      borderRadius: BorderRadius.circular(
+                        _MainScreenStyle.smallBorderRadius,
+                      ),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(
+                            _MainScreenStyle.smallBorderRadius,
+                          ),
+                          border: Border.all(
+                            color: _selectedLocation != null
+                                ? const Color(0xFF3B82F6)
+                                : Colors.grey[300]!,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              _selectedLocation == null
+                                  ? Icons.add_location_alt_outlined
+                                  : Icons.check_circle_rounded,
+                              color: _selectedLocation == null
+                                  ? Colors.grey[500]
+                                  : const Color(0xFF3B82F6),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                _selectedLocation == null
+                                    ? 'Seleccionar ubicación en mapa'
+                                    : 'Ubicación seleccionada',
+                                style: GoogleFonts.inter(
+                                  color: _selectedLocation == null
+                                      ? Colors.grey[600]
+                                      : const Color(0xFF3B82F6),
+                                  fontWeight: _selectedLocation == null
+                                      ? FontWeight.w400
+                                      : FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                            Icon(
+                              Icons.chevron_right_rounded,
+                              color: Colors.grey[400],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 32),
+
+              // Botón Publicar
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: _isLoading
+                    ? Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.primary,
+                          strokeWidth: 3,
+                        ),
+                      )
+                    : ElevatedButton(
+                        onPressed: _handlePublish,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              _MainScreenStyle.borderRadius,
+                            ),
+                          ),
+                          shadowColor: AppColors.primary.withOpacity(0.3),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.publish_rounded),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Publicar',
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+              ),
+              const SizedBox(height: 24),
             ],
           ),
         ),
@@ -1314,23 +2105,11 @@ class _MessagesTabState extends State<_MessagesTab> {
   @override
   void initState() {
     super.initState();
-    // Cargar los trades del usuario al iniciar la pestaña
-    // Usamos 'listen: false' en initState
     Provider.of<TradeProvider>(context, listen: false).fetchMyTrades();
   }
 
-  // Filter state for trades list
   TradeFilter _filter = TradeFilter.All;
 
-  // Helper predicates
-  bool _isBuying(int currentUserId, TradeDto t) =>
-      t.requesterUserId == currentUserId;
-  bool _isSelling(int currentUserId, TradeDto t) =>
-      t.ownerUserId == currentUserId;
-
-  // --- Helpers para mostrar el estado del Trueque ---
-
-  // Devuelve un texto legible para el estado
   String _getStatusText(TradeStatus status) {
     switch (status) {
       case TradeStatus.Pending:
@@ -1346,48 +2125,81 @@ class _MessagesTabState extends State<_MessagesTab> {
     }
   }
 
-  // Devuelve un color para el chip de estado
   Color _getStatusColor(TradeStatus status) {
     switch (status) {
       case TradeStatus.Pending:
-        return Colors.orangeAccent;
+        return const Color(0xFFFF9500);
       case TradeStatus.Accepted:
-        return Colors.blueAccent;
+        return const Color(0xFF3B82F6);
       case TradeStatus.Completed:
-        return Colors.green;
+        return AppColors.primary;
       case TradeStatus.Rejected:
       case TradeStatus.Cancelled:
-        return Colors.redAccent;
+        return const Color(0xFFEF4444);
     }
   }
 
-  // --- Fin de Helpers ---
-
   @override
   Widget build(BuildContext context) {
-    // Get current user id from AuthProvider
     final auth = Provider.of<AuthProvider>(context);
     final currentUserId = auth.user?.id ?? -1;
 
-    // Usamos Consumer para que la UI reaccione a los cambios del TradeProvider
     return Consumer<TradeProvider>(
       builder: (context, tradeProvider, child) {
-        // 1. Manejar estado de carga
         if (tradeProvider.isLoading) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        // 2. Manejar estado vacío
-        if (tradeProvider.myTrades.isEmpty) {
-          return const Center(
-            child: Text(
-              "No tienes conversaciones de trueques.",
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+          return Container(
+            color: _MainScreenStyle.backgroundColor,
+            child: Center(
+              child: CircularProgressIndicator(
+                color: AppColors.primary,
+                strokeWidth: 3,
+              ),
             ),
           );
         }
 
-        // 3. Filtros de pestañas (Todos / Comprando / Vendiendo)
+        if (tradeProvider.myTrades.isEmpty) {
+          return Container(
+            color: _MainScreenStyle.backgroundColor,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.chat_bubble_outline_rounded,
+                      size: 48,
+                      color: Colors.grey[400],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Sin conversaciones',
+                    style: GoogleFonts.inter(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF1E293B),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Tus trueques aparecerán aquí',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      color: Colors.grey[500],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
         final filtered = tradeProvider.myTrades.where((t) {
           switch (_filter) {
             case TradeFilter.All:
@@ -1399,174 +2211,232 @@ class _MessagesTabState extends State<_MessagesTab> {
           }
         }).toList();
 
-        return Column(
+        return Container(
+          color: _MainScreenStyle.backgroundColor,
+          child: Column(
+            children: [
+              // Header
+              Padding(
+                padding: const EdgeInsets.all(_MainScreenStyle.pagePadding),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Mensajes', style: _MainScreenStyle.headingStyle),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${tradeProvider.myTrades.length} conversaciones',
+                      style: _MainScreenStyle.bodyStyle,
+                    ),
+                  ],
+                ),
+              ),
+              // Filtros
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: _MainScreenStyle.pagePadding,
+                ),
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(
+                      _MainScreenStyle.smallBorderRadius,
+                    ),
+                    boxShadow: _MainScreenStyle.softShadow,
+                  ),
+                  child: Row(
+                    children: [
+                      _buildFilterChip(TradeFilter.All, 'Todos'),
+                      _buildFilterChip(TradeFilter.Buying, 'Comprando'),
+                      _buildFilterChip(TradeFilter.Selling, 'Vendiendo'),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Lista de trades
+              Expanded(
+                child: ListView.separated(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: _MainScreenStyle.pagePadding,
+                  ),
+                  itemCount: filtered.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final trade = filtered[index];
+                    return _buildTradeCard(trade, currentUserId, tradeProvider);
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFilterChip(TradeFilter f, String label) {
+    final selected = _filter == f;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _filter = f),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: selected ? AppColors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: selected ? Colors.white : Colors.grey[600],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTradeCard(
+    TradeDto trade,
+    int currentUserId,
+    TradeProvider tradeProvider,
+  ) {
+    final isBuying = trade.requesterUserId == currentUserId;
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushNamed(context, AppRoutes.tradeChat, arguments: trade.id);
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(_MainScreenStyle.borderRadius),
+          boxShadow: _MainScreenStyle.softShadow,
+        ),
+        child: Row(
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Row(
+            // Avatar
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: isBuying
+                      ? [const Color(0xFF22C55E), const Color(0xFF16A34A)]
+                      : [const Color(0xFFF97316), const Color(0xFFEA580C)],
+                ),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(
+                isBuying ? Icons.shopping_bag_outlined : Icons.sell_outlined,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 14),
+            // Content
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildFilterButton(TradeFilter.All, 'Todos'),
-                  const SizedBox(width: 8),
-                  _buildFilterButton(TradeFilter.Buying, 'Comprando'),
-                  const SizedBox(width: 8),
-                  _buildFilterButton(TradeFilter.Selling, 'Vendiendo'),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color:
+                              (isBuying
+                                      ? const Color(0xFF22C55E)
+                                      : const Color(0xFFF97316))
+                                  .withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          isBuying ? 'Comprando' : 'Vendiendo',
+                          style: GoogleFonts.inter(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: isBuying
+                                ? const Color(0xFF22C55E)
+                                : const Color(0xFFF97316),
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _getStatusColor(trade.status).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          _getStatusText(trade.status),
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: _getStatusColor(trade.status),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  FutureBuilder<String?>(
+                    future: tradeProvider.fetchListingTitle(
+                      trade.targetListingId,
+                    ),
+                    initialData: tradeProvider.getCachedListingTitle(
+                      trade.targetListingId,
+                    ),
+                    builder: (context, snapshot) {
+                      final title = snapshot.data ?? 'Trueque #${trade.id}';
+                      return Text(
+                        title,
+                        style: GoogleFonts.inter(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF1E293B),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    isBuying ? 'Oferta enviada por ti' : 'Oferta recibida',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      color: Colors.grey[500],
+                    ),
+                  ),
                 ],
               ),
             ),
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: filtered.length,
-                itemBuilder: (context, index) {
-                  final trade = filtered[index];
-                  final isBuying = trade.requesterUserId == currentUserId;
-                  final isSelling = trade.ownerUserId == currentUserId;
-
-                  Widget roleChip() {
-                    if (isBuying) {
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.green.shade100,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Text(
-                          'Comprando',
-                          style: TextStyle(color: Colors.green),
-                        ),
-                      );
-                    } else if (isSelling) {
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.shade100,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Text(
-                          'Vendiendo',
-                          style: TextStyle(color: Colors.orange),
-                        ),
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  }
-
-                  String roleSubtitle() {
-                    if (isBuying) return 'Oferta enviada por ti';
-                    if (isSelling) return 'Oferta recibida';
-                    return trade.message ?? 'Ver detalles del trueque...';
-                  }
-
-                  return ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: Colors.grey[300],
-                      child: const Icon(
-                        Icons.person_outline,
-                        color: Colors.white,
-                      ),
-                    ),
-                    title: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            roleChip(),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: FutureBuilder<String?>(
-                                future: tradeProvider.fetchListingTitle(
-                                  trade.targetListingId,
-                                ),
-                                initialData: tradeProvider
-                                    .getCachedListingTitle(
-                                      trade.targetListingId,
-                                    ),
-                                builder: (context, snapshot) {
-                                  final title =
-                                      snapshot.data ?? 'Trueque #${trade.id}';
-                                  return Text(
-                                    title,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          roleSubtitle(),
-                          style: const TextStyle(color: Colors.grey),
-                        ),
-                      ],
-                    ),
-                    trailing: Chip(
-                      label: Text(
-                        _getStatusText(trade.status),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      backgroundColor: _getStatusColor(trade.status),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 4,
-                        vertical: 0,
-                      ),
-                    ),
-                    onTap: () {
-                      Navigator.pushNamed(
-                        context,
-                        AppRoutes.tradeChat,
-                        arguments: trade.id,
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
+            const SizedBox(width: 8),
+            Icon(Icons.chevron_right_rounded, color: Colors.grey[400]),
           ],
-        );
-      },
+        ),
+      ),
     );
   }
 }
 
 // Local enum for filtering trades
 enum TradeFilter { All, Buying, Selling }
-
-extension on _MessagesTabState {
-  Widget _buildFilterButton(TradeFilter f, String label) {
-    final selected = _filter == f;
-    return Expanded(
-      child: OutlinedButton(
-        style: OutlinedButton.styleFrom(
-          backgroundColor: selected
-              ? AppColors.primary.withOpacity(0.08)
-              : null,
-          side: BorderSide(
-            color: selected ? AppColors.primary : Colors.grey.shade300,
-          ),
-        ),
-        onPressed: () => setState(() => _filter = f),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: selected ? AppColors.primary : Colors.black87,
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _WalletTab extends StatefulWidget {
   @override
@@ -1598,102 +2468,230 @@ class _WalletTabState extends State<_WalletTab> {
         final entries = wallet?.entries ?? [];
 
         if (walletProvider.isLoading && wallet == null) {
-          return const Center(child: CircularProgressIndicator());
+          return Container(
+            color: _MainScreenStyle.backgroundColor,
+            child: Center(
+              child: CircularProgressIndicator(
+                color: AppColors.primary,
+                strokeWidth: 3,
+              ),
+            ),
+          );
         }
 
-        return RefreshIndicator(
-          onRefresh: walletProvider.fetchWallet,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'TrueCoin Balance',
-                      style: TextStyle(color: Colors.white70),
+        return Container(
+          color: _MainScreenStyle.backgroundColor,
+          child: RefreshIndicator(
+            color: AppColors.primary,
+            onRefresh: walletProvider.fetchWallet,
+            child: ListView(
+              padding: const EdgeInsets.all(_MainScreenStyle.pagePadding),
+              children: [
+                // Balance Card
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AppColors.primary,
+                        AppColors.primary.withOpacity(0.85),
+                      ],
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _formatCoins(wallet?.balance ?? 0),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 32,
-                        fontWeight: FontWeight.w800,
+                    borderRadius: BorderRadius.circular(
+                      _MainScreenStyle.borderRadius,
+                    ),
+                    boxShadow: _MainScreenStyle.elevatedShadow,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'TrueCoin Balance',
+                            style: GoogleFonts.inter(
+                              color: Colors.white70,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.account_balance_wallet_rounded,
+                              color: Colors.white,
+                              size: 24,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            _formatCoins(wallet?.balance ?? 0),
+                            style: GoogleFonts.inter(
+                              color: Colors.white,
+                              fontSize: 40,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: Text(
+                              'TrueCoins',
+                              style: GoogleFonts.inter(
+                                color: Colors.white70,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildWalletButton(
+                              icon: Icons.add_rounded,
+                              label: 'Recargar',
+                              onTap: () => _openWallet(
+                                context,
+                                WalletOperationType.deposit,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildWalletButton(
+                              icon: Icons.arrow_downward_rounded,
+                              label: 'Retirar',
+                              onTap: () => _openWallet(
+                                context,
+                                WalletOperationType.withdraw,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: _MainScreenStyle.sectionSpacing),
+
+                // Movimientos section
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        Icons.receipt_long_rounded,
+                        color: AppColors.primary,
+                        size: 18,
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.white,
-                              side: const BorderSide(color: Colors.white70),
-                            ),
-                            onPressed: () => _openWallet(
-                              context,
-                              WalletOperationType.deposit,
-                            ),
-                            icon: const Icon(Icons.add_circle_outline),
-                            label: const Text('Recargar'),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.white,
-                              side: const BorderSide(color: Colors.white70),
-                            ),
-                            onPressed: () => _openWallet(
-                              context,
-                              WalletOperationType.withdraw,
-                            ),
-                            icon: const Icon(Icons.arrow_downward),
-                            label: const Text('Retirar'),
-                          ),
-                        ),
-                      ],
+                    const SizedBox(width: 12),
+                    Text(
+                      'Movimientos recientes',
+                      style: _MainScreenStyle.sectionTitleStyle,
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Text(
-                    'Movimientos recientes',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                const SizedBox(height: 16),
+
+                if (walletProvider.isLoading)
+                  LinearProgressIndicator(
+                    color: AppColors.primary,
+                    backgroundColor: AppColors.primary.withOpacity(0.1),
+                    minHeight: 3,
                   ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              if (walletProvider.isLoading)
-                const LinearProgressIndicator(minHeight: 2),
-              if (entries.isEmpty && !walletProvider.isLoading)
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 32),
-                  alignment: Alignment.center,
-                  child: const Text(
-                    'No hay movimientos registrados todavía.',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                )
-              else
-                ...entries.map((entry) => _WalletEntryTile(entry: entry)),
-            ],
+
+                if (entries.isEmpty && !walletProvider.isLoading)
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 40),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(
+                        _MainScreenStyle.borderRadius,
+                      ),
+                      boxShadow: _MainScreenStyle.softShadow,
+                    ),
+                    child: Center(
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.receipt_long_outlined,
+                            size: 48,
+                            color: Colors.grey[300],
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Sin movimientos aún',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              color: Colors.grey[500],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  ...entries.map((entry) => _WalletEntryTile(entry: entry)),
+              ],
+            ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildWalletButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withOpacity(0.2)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -1742,25 +2740,80 @@ class _WalletEntryTile extends StatelessWidget {
     }
   }
 
+  IconData _getTypeIcon(WalletEntryType type) {
+    switch (type) {
+      case WalletEntryType.Deposit:
+      case WalletEntryType.P2PDeposit:
+        return Icons.add_circle_rounded;
+      case WalletEntryType.Withdrawal:
+      case WalletEntryType.P2PWithdrawal:
+        return Icons.remove_circle_rounded;
+      case WalletEntryType.TradeSent:
+        return Icons.send_rounded;
+      case WalletEntryType.TradeReceived:
+        return Icons.call_received_rounded;
+      case WalletEntryType.Adjustment:
+        return Icons.tune_rounded;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final color = _isPositive ? Colors.green : Colors.red;
-    final icon = _isPositive ? Icons.arrow_upward : Icons.arrow_downward;
+    final color = _isPositive
+        ? const Color(0xFF22C55E)
+        : const Color(0xFFEF4444);
 
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: color.withValues(alpha: 0.15),
-          child: Icon(icon, color: color),
-        ),
-        title: Text(
-          _formatAmount(entry.amount),
-          style: TextStyle(color: color, fontWeight: FontWeight.w700),
-        ),
-        subtitle: Text(
-          '${_entryDescription(entry.type)} • ${_formatDate(entry.createdAt)}',
-        ),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(_MainScreenStyle.borderRadius),
+        boxShadow: _MainScreenStyle.softShadow,
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(_getTypeIcon(entry.type), color: color, size: 22),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _entryDescription(entry.type),
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF1E293B),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _formatDate(entry.createdAt),
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: Colors.grey[500],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            _formatAmount(entry.amount),
+            style: GoogleFonts.inter(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+        ],
       ),
     );
   }
