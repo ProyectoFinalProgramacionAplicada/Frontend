@@ -433,133 +433,110 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
+
+        // Breakpoints: mobile < 600, tablet < 1000, desktop >= 1000
         final isMobile = width < 600;
+        final isTablet = width >= 600 && width < 1000;
 
         // Spacing consistente
         const spacing = _KPICardStyle.itemSpacing;
 
+        // Lista de cards para reutilizar
+        final cards = [
+          _buildCircularKPICard(
+            title: 'Tasa de Éxito',
+            value: provider.formattedCompletionRate,
+            percentage: provider.completionRate / 100,
+            subtitle:
+                '${provider.completedTrades} de ${provider.totalTrades} trades',
+            icon: Icons.check_circle_outline,
+            color: AppColors.successColor,
+          ),
+          _buildRadialKPICard(
+            title: 'Tiempo Promedio',
+            value: provider.formattedAvgCompletionTime,
+            subtitle: 'Para cerrar trade',
+            icon: Icons.timer_outlined,
+            color: const Color(0xFF6366F1),
+            maxValue: 24,
+            currentValue: provider.avgClosureTimeHours,
+          ),
+          _buildDonutKPICard(
+            title: 'Ratio Aceptación',
+            value: provider.formattedAcceptRejectRatio,
+            subtitle: 'Completados vs Cancelados',
+            icon: Icons.thumbs_up_down_outlined,
+            color: const Color(0xFFF59E0B),
+            completed: provider.completedTrades,
+            cancelled: provider.cancelledTrades,
+          ),
+          _buildVolumeKPICard(
+            title: 'Volumen TC',
+            value: _formatNumber(provider.totalTrueCoinVolume),
+            subtitle: 'TrueCoins en circulación',
+            icon: Icons.monetization_on_outlined,
+            color: const Color(0xFF8B5CF6),
+          ),
+        ];
+
         if (isMobile) {
-          // Mobile: Column con cards de altura fija
+          // Mobile: 1 columna (4 filas)
+          return Column(
+            children: cards.asMap().entries.map((entry) {
+              return Padding(
+                padding: EdgeInsets.only(bottom: entry.key < 3 ? spacing : 0),
+                child: SizedBox(
+                  height: _KPICardStyle.mobileCardHeight,
+                  child: entry.value,
+                ),
+              );
+            }).toList(),
+          );
+        }
+
+        if (isTablet) {
+          // Tablet: 2 columnas x 2 filas
           return Column(
             children: [
               SizedBox(
-                height: _KPICardStyle.mobileCardHeight,
-                child: _buildCircularKPICard(
-                  title: 'Tasa de Éxito',
-                  value: provider.formattedCompletionRate,
-                  percentage: provider.completionRate / 100,
-                  subtitle:
-                      '${provider.completedTrades} de ${provider.totalTrades} trades',
-                  icon: Icons.check_circle_outline,
-                  color: AppColors.successColor,
+                height: _KPICardStyle.desktopCardHeight,
+                child: Row(
+                  children: [
+                    Expanded(child: cards[0]),
+                    const SizedBox(width: spacing),
+                    Expanded(child: cards[1]),
+                  ],
                 ),
               ),
               const SizedBox(height: spacing),
               SizedBox(
-                height: _KPICardStyle.mobileCardHeight,
-                child: _buildRadialKPICard(
-                  title: 'Tiempo Promedio',
-                  value: provider.formattedAvgCompletionTime,
-                  subtitle: 'Para cerrar trade',
-                  icon: Icons.timer_outlined,
-                  color: const Color(0xFF6366F1),
-                  maxValue: 24,
-                  currentValue: provider.avgClosureTimeHours,
-                ),
-              ),
-              const SizedBox(height: spacing),
-              SizedBox(
-                height: _KPICardStyle.mobileCardHeight,
-                child: _buildDonutKPICard(
-                  title: 'Ratio Aceptación',
-                  value: provider.formattedAcceptRejectRatio,
-                  subtitle: 'Completados vs Cancelados',
-                  icon: Icons.thumbs_up_down_outlined,
-                  color: const Color(0xFFF59E0B),
-                  completed: provider.completedTrades,
-                  cancelled: provider.cancelledTrades,
-                ),
-              ),
-              const SizedBox(height: spacing),
-              SizedBox(
-                height: _KPICardStyle.mobileCardHeight,
-                child: _buildVolumeKPICard(
-                  title: 'Volumen TC',
-                  value: _formatNumber(provider.totalTrueCoinVolume),
-                  subtitle: 'TrueCoins en circulación',
-                  icon: Icons.monetization_on_outlined,
-                  color: const Color(0xFF8B5CF6),
+                height: _KPICardStyle.desktopCardHeight,
+                child: Row(
+                  children: [
+                    Expanded(child: cards[2]),
+                    const SizedBox(width: spacing),
+                    Expanded(child: cards[3]),
+                  ],
                 ),
               ),
             ],
           );
         }
 
-        // Desktop: Grid 2x2 usando Row + Expanded para alineación perfecta
-        return Column(
-          children: [
-            // Primera fila
-            SizedBox(
-              height: _KPICardStyle.desktopCardHeight,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _buildCircularKPICard(
-                      title: 'Tasa de Éxito',
-                      value: provider.formattedCompletionRate,
-                      percentage: provider.completionRate / 100,
-                      subtitle:
-                          '${provider.completedTrades} de ${provider.totalTrades} trades',
-                      icon: Icons.check_circle_outline,
-                      color: AppColors.successColor,
-                    ),
-                  ),
-                  const SizedBox(width: spacing),
-                  Expanded(
-                    child: _buildRadialKPICard(
-                      title: 'Tiempo Promedio',
-                      value: provider.formattedAvgCompletionTime,
-                      subtitle: 'Para cerrar trade',
-                      icon: Icons.timer_outlined,
-                      color: const Color(0xFF6366F1),
-                      maxValue: 24,
-                      currentValue: provider.avgClosureTimeHours,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: spacing),
-            // Segunda fila
-            SizedBox(
-              height: _KPICardStyle.desktopCardHeight,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _buildDonutKPICard(
-                      title: 'Ratio Aceptación',
-                      value: provider.formattedAcceptRejectRatio,
-                      subtitle: 'Completados vs Cancelados',
-                      icon: Icons.thumbs_up_down_outlined,
-                      color: const Color(0xFFF59E0B),
-                      completed: provider.completedTrades,
-                      cancelled: provider.cancelledTrades,
-                    ),
-                  ),
-                  const SizedBox(width: spacing),
-                  Expanded(
-                    child: _buildVolumeKPICard(
-                      title: 'Volumen TC',
-                      value: _formatNumber(provider.totalTrueCoinVolume),
-                      subtitle: 'TrueCoins en circulación',
-                      icon: Icons.monetization_on_outlined,
-                      color: const Color(0xFF8B5CF6),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+        // Desktop: 4 columnas (1 fila)
+        return SizedBox(
+          height: _KPICardStyle.desktopCardHeight,
+          child: Row(
+            children: [
+              Expanded(child: cards[0]),
+              const SizedBox(width: spacing),
+              Expanded(child: cards[1]),
+              const SizedBox(width: spacing),
+              Expanded(child: cards[2]),
+              const SizedBox(width: spacing),
+              Expanded(child: cards[3]),
+            ],
+          ),
         );
       },
     );
