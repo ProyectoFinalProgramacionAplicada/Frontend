@@ -639,7 +639,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
               ],
             ),
           ),
-          const SizedBox(width: _KPICardStyle.itemSpacing),
+          const SizedBox(width: 24),
           // Información de la card
           Expanded(
             child: Column(
@@ -877,7 +877,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
               },
             ),
           ),
-          const SizedBox(width: _KPICardStyle.itemSpacing),
+          const SizedBox(width: 24),
           // Información y leyenda
           Expanded(
             child: Column(
@@ -1021,7 +1021,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
               ),
             ),
           ),
-          const SizedBox(width: _KPICardStyle.itemSpacing),
+          const SizedBox(width: 24),
           // Información
           Expanded(
             child: Column(
