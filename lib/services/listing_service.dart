@@ -48,6 +48,9 @@ class ListingService {
   }
 
   Future<void> createListing(ListingCreateDto dto) async {
+    print("🚨 DEBUG DATA:");
+    print("Latitud que llega: ${dto.latitude}");
+    print("Longitud que llega: ${dto.longitude}");
     final formData = FormData.fromMap({
       'Title': dto.title,
       'TrueCoinValue': dto.trueCoinValue,

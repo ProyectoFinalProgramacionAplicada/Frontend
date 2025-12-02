@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:truekapp/dto/trade/trade_status.dart';
 
@@ -20,7 +21,6 @@ class TradeChatScreen extends StatefulWidget {
 class _TradeChatScreenState extends State<TradeChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  Timer? _timer;
   int? _tradeId;
 
   @override
@@ -37,15 +37,26 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
   void _initData() {
     if (_tradeId == null) return;
 
-    // Carga inicial
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fetchMessages();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final provider = Provider.of<TradeProvider>(context, listen: false);
+      
+      // 1. Cargar historial antiguo (API REST)
+      await provider.fetchMessages(_tradeId!);
+      
+      // 2. Conectarse al tiempo real (SignalR)
+      await provider.joinTradeChat(_tradeId!);
     });
+  }
 
-    // Polling: Actualizar mensajes cada 5 segundos (opcional, idealmente usar SignalR)
-    _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
-      if (mounted) _fetchMessages();
-    });
+  @override
+  void dispose() {
+    // Salir del grupo al cerrar la pantalla
+    if (_tradeId != null) {
+      Provider.of<TradeProvider>(context, listen: false).leaveTradeChat(_tradeId!);
+    }
+    _messageController.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchMessages() async {
@@ -54,14 +65,6 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
       context,
       listen: false,
     ).fetchMessages(_tradeId!);
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    _messageController.dispose();
-    _scrollController.dispose();
-    super.dispose();
   }
 
   Future<void> _sendMessage() async {
@@ -335,7 +338,32 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
               },
             ),
           ),
-
+          if (tradeProvider.isOtherUserTyping)
+            Padding(
+              padding: const EdgeInsets.only(left: 16, bottom: 4),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Row(
+                  children: [
+                    // Una animación simple de puntos o texto
+                    SizedBox(
+                      width: 12, 
+                      height: 12, 
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.grey),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      "Escribiendo...",
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           // --- INPUT DE MENSAJES ---
           // Solo habilitado si el trade NO está finalizado ni cancelado
           if (!isCompleted && !isCancelled)
@@ -371,23 +399,40 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                           fillColor: Colors.grey[100],
                         ),
                         textCapitalization: TextCapitalization.sentences,
+                        onChanged: (text) {
+                          if (text.isNotEmpty) {
+                            final myName = authProvider.currentUser?.displayName ?? "Alguien";
+                            tradeProvider.notifyImTyping(_tradeId!, myName);
+                          }
+                        },
+                        
+                        onSubmitted: (_) => _sendMessage(),
                       ),
                     ),
+                    // ✅ PEGAR ESTO (El botón correcto)
                     const SizedBox(width: 8),
-                    // En el AppBar title:
-                    CircleAvatar(
-  radius: 18, // Tamaño pequeño para el input bar
-  backgroundImage: otherUserAvatar != null
-      ? NetworkImage(
-          otherUserAvatar.startsWith('http')
-              ? otherUserAvatar
-              : '${AppConstants.apiBaseUrl}$otherUserAvatar',
-        )
-      : null,
-  child: otherUserAvatar == null 
-      ? const Icon(Icons.person, size: 18) 
-      : null,
-),
+                    GestureDetector(
+                      onTap: _sendMessage, // Llama a la función de enviar
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withOpacity(0.4),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.send_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
