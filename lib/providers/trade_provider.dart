@@ -51,6 +51,9 @@ class TradeProvider extends ChangeNotifier {
       _listingTitleCache[listingId] = title;
       return title;
     } catch (e) {
+      // AGREGA ESTA LÍNEA PARA VER EL ERROR REAL:
+      print("ERROR CRÍTICO recuperando título del listing $listingId: $e"); 
+      
       _listingTitleCache[listingId] = null;
       return null;
     }

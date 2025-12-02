@@ -11,14 +11,15 @@ class TradeDto {
   final DateTime createdAt;
   final double? offeredTrueCoins;
   final double? requestedTrueCoins;
-
-  // Campos nuevos para lógica de roles
   final int listingOwnerId;
   final int initiatorUserId;
-
-  // --- NUEVOS CAMPOS PARA IMÁGENES ---
+  // --- CAMPOS VISUALES ---
   final String? requesterAvatarUrl;
   final String? ownerAvatarUrl;
+  final String? requesterName; // <--- Nuevo
+  final String? ownerName;     // <--- Nuevo
+  final String? listingTitle;
+  final String? listingImageUrl;
 
   TradeDto({
     required this.id,
@@ -33,9 +34,12 @@ class TradeDto {
     this.requestedTrueCoins,
     required this.listingOwnerId,
     required this.initiatorUserId,
-    // --- AGREGAR AL CONSTRUCTOR ---
     this.requesterAvatarUrl,
     this.ownerAvatarUrl,
+    this.requesterName, // <--- Agregar
+    this.ownerName,     // <--- Agregar
+    this.listingTitle,
+    this.listingImageUrl,
   });
 
   factory TradeDto.fromJson(Map<String, dynamic> json) {
@@ -45,7 +49,6 @@ class TradeDto {
       ownerUserId: json['ownerUserId'],
       targetListingId: json['targetListingId'],
       offeredListingId: json['offeredListingId'],
-      // Manejo robusto del enum
       status: json['status'] is int
           ? TradeStatus.values[json['status']]
           : TradeStatus.values.firstWhere(
@@ -60,31 +63,18 @@ class TradeDto {
       requestedTrueCoins: json['requestedTrueCoins'] != null
           ? (json['requestedTrueCoins'] as num).toDouble()
           : null,
-      // Mapeo de los nuevos campos de roles
       listingOwnerId: json['listingOwnerId'] ?? json['ownerUserId'] ?? 0,
       initiatorUserId: json['initiatorUserId'] ?? json['requesterUserId'] ?? 0,
       
-      // --- MAPEO DE LAS IMÁGENES ---
+      // Mapeo visual
       requesterAvatarUrl: json['requesterAvatarUrl'],
       ownerAvatarUrl: json['ownerAvatarUrl'],
+      requesterName: json['requesterName'], // <--- Mapear
+      ownerName: json['ownerName'],         // <--- Mapear
+      listingTitle: json['listingTitle'],
+      listingImageUrl: json['listingImageUrl'],
     );
   }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'requesterUserId': requesterUserId,
-    'ownerUserId': ownerUserId,
-    'targetListingId': targetListingId,
-    'offeredListingId': offeredListingId,
-    'status': status.index,
-    'message': message,
-    'createdAt': createdAt.toIso8601String(),
-    'offeredTrueCoins': offeredTrueCoins,
-    'requestedTrueCoins': requestedTrueCoins,
-    'listingOwnerId': listingOwnerId,
-    'initiatorUserId': initiatorUserId,
-    // --- AGREGAR AL JSON ---
-    'requesterAvatarUrl': requesterAvatarUrl,
-    'ownerAvatarUrl': ownerAvatarUrl,
-  };
+  
+  // (El toJson no es crítico para mostrar, pero puedes actualizarlo si quieres)
 }

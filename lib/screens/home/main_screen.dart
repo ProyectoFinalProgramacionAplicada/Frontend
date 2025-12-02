@@ -2382,12 +2382,19 @@ class _MessagesTabState extends State<_MessagesTab> {
     );
   }
 
-  Widget _buildTradeCard(
+Widget _buildTradeCard(
     TradeDto trade,
     int currentUserId,
     TradeProvider tradeProvider,
   ) {
     final isBuying = trade.requesterUserId == currentUserId;
+    
+    // Lógica para saber el nombre del OTRO
+    // Si yo compro (requester), el otro es el owner.
+    // Si yo vendo (owner), el otro es el requester.
+    final otherUserName = isBuying 
+        ? (trade.ownerName ?? "Vendedor") 
+        : (trade.requesterName ?? "Comprador");
 
     return GestureDetector(
       onTap: () {
@@ -2402,7 +2409,7 @@ class _MessagesTabState extends State<_MessagesTab> {
         ),
         child: Row(
           children: [
-            // Avatar
+            // Avatar con inicial o icono
             Container(
               width: 50,
               height: 50,
@@ -2414,31 +2421,36 @@ class _MessagesTabState extends State<_MessagesTab> {
                 ),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: Icon(
-                isBuying ? Icons.shopping_bag_outlined : Icons.sell_outlined,
-                color: Colors.white,
-                size: 24,
+              child: Center(
+                child: Text(
+                  otherUserName.isNotEmpty ? otherUserName[0].toUpperCase() : "?",
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                  ),
+                ),
               ),
             ),
             const SizedBox(width: 14),
-            // Content
+            // Contenido
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
+                      // Chip de Rol (Comprando/Vendiendo)
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color:
-                              (isBuying
-                                      ? const Color(0xFF22C55E)
-                                      : const Color(0xFFF97316))
-                                  .withOpacity(0.1),
+                          color: (isBuying
+                                  ? const Color(0xFF22C55E)
+                                  : const Color(0xFFF97316))
+                              .withOpacity(0.1),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
@@ -2452,55 +2464,53 @@ class _MessagesTabState extends State<_MessagesTab> {
                           ),
                         ),
                       ),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _getStatusColor(trade.status).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
+                      const SizedBox(width: 8),
+                      // Nombre del usuario
+                      Expanded(
                         child: Text(
-                          _getStatusText(trade.status),
+                          otherUserName,
                           style: GoogleFonts.inter(
-                            fontSize: 11,
+                            fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: _getStatusColor(trade.status),
+                            color: const Color(0xFF1E293B),
                           ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  FutureBuilder<String?>(
-                    future: tradeProvider.fetchListingTitle(
-                      trade.targetListingId,
-                    ),
-                    initialData: tradeProvider.getCachedListingTitle(
-                      trade.targetListingId,
-                    ),
-                    builder: (context, snapshot) {
-                      final title = snapshot.data ?? 'Trueque #${trade.id}';
-                      return Text(
-                        title,
-                        style: GoogleFonts.inter(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF1E293B),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      );
-                    },
-                  ),
                   const SizedBox(height: 4),
+                  // --- CÓDIGO NUEVO Y LIMPIO ---
                   Text(
-                    isBuying ? 'Oferta enviada por ti' : 'Oferta recibida',
+                    trade.listingTitle ?? 'Producto desconocido',
                     style: GoogleFonts.inter(
-                      fontSize: 13,
-                      color: Colors.grey[500],
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF1E293B),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+                  // Estado del trueque (Badge pequeño)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: _getStatusColor(trade.status).withOpacity(0.3),
+                      ),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      _getStatusText(trade.status),
+                      style: GoogleFonts.inter(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                        color: _getStatusColor(trade.status),
+                      ),
                     ),
                   ),
                 ],
