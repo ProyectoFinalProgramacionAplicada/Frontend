@@ -12,9 +12,7 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
-
 import '../../core/app_export.dart';
-import '../../core/constants/app_colors.dart';
 import '../../dto/listing/listing_create_dto.dart';
 import '../../dto/listing/listing_dto.dart';
 import '../../dto/trade/trade_dto.dart';
@@ -28,6 +26,7 @@ import '../../providers/wallet_provider.dart';
 import '../listing/pick_location_map_screen.dart';
 import '../p2p/p2p_market_screen.dart';
 import '../wallet/wallet_screen.dart';
+import '../../services/api_client.dart'; // Para llamar a la IA
 
 /// Constantes de estilo para Main Screen - consistencia visual con Admin Panel
 class _MainScreenStyle {
@@ -1486,6 +1485,53 @@ class _AddItemTabState extends State<_AddItemTab> {
   Position? _currentPosition;
   LatLng? _selectedLocation;
 
+  // --- LÓGICA IA ---
+  bool _isGeneratingAi = false;
+
+  Future<void> _generateDescriptionWithAI() async {
+    final text = _descController.text.trim();
+    if (text.length < 5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Escribe al menos una idea básica (min. 5 letras)."),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isGeneratingAi = true);
+
+    try {
+      // Llamamos al servicio (asegúrate de tener el import de api_client.dart arriba)
+      final newText = await ApiClient().enhanceText(text);
+
+      setState(() {
+        _descController.text = newText;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("¡Descripción mejorada con IA! ✨"),
+            backgroundColor: Colors.indigo,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Error al generar: $e"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isGeneratingAi = false);
+    }
+  }
+
   Future<void> _pickLocation() async {
     LatLng initialLatLng;
 
@@ -1594,6 +1640,7 @@ class _AddItemTabState extends State<_AddItemTab> {
       final title = _titleController.text;
       final description = _descController.text;
       final trueCoinValue = double.tryParse(_valueController.text);
+      
 
       if (trueCoinValue == null) {
         throw Exception("El valor de TrueCoins es inválido.");
@@ -1736,8 +1783,41 @@ class _AddItemTabState extends State<_AddItemTab> {
                     ),
                     const SizedBox(height: 20),
 
-                    // Campo Descripción
-                    Text('Descripción', style: _MainScreenStyle.labelStyle),
+                    // --- SECCIÓN DESCRIPCIÓN (MODIFICADA CON IA) ---
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Descripción', style: _MainScreenStyle.labelStyle),
+                        // Botón Mágico
+                        TextButton.icon(
+                          onPressed: _isGeneratingAi ? null : _generateDescriptionWithAI,
+                          icon: _isGeneratingAi
+                              ? const SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : Icon(
+                                  Icons.auto_awesome,
+                                  color: AppColors.primary,
+                                  size: 16,
+                                ),
+                          label: Text(
+                            _isGeneratingAi ? "Mejorando..." : "Mejorar con IA",
+                            style: GoogleFonts.inter(
+                              color: _isGeneratingAi ? Colors.grey : AppColors.primary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            minimumSize: const Size(0, 0),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _descController,
