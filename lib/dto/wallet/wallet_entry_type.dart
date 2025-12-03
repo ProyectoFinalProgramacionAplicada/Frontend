@@ -1,10 +1,11 @@
 // lib/dto/wallet/wallet_entry_type.dart
 enum WalletEntryType {
-  Deposit, // 0
-  Withdrawal, // 1
-  TradeSent, // 2
-  TradeReceived, // 3
-  P2PDeposit, // 4
-  P2PWithdrawal, // 5
-  Adjustment, // 6 (reservado para movimientos administrativos/P2P extra)
+  EarnedByTrade, // 0
+  SpentOnReward, // 1
+  AdminAdjustment, // 2
+  Bonus, // 3
+  InternalTransferOut, // 4
+  InternalTransferIn, // 5
+  P2PDeposit, // 6
+  P2PWithdraw, // 7
 }

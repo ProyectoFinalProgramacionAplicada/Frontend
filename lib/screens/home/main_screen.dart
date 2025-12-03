@@ -2812,36 +2812,37 @@ class _WalletEntryTile extends StatelessWidget {
 
   String _entryDescription(WalletEntryType type) {
     switch (type) {
-      case WalletEntryType.Deposit:
-        return 'Depósito';
-      case WalletEntryType.Withdrawal:
-        return 'Retiro';
-      case WalletEntryType.TradeSent:
+      case WalletEntryType.EarnedByTrade:
+        return 'Ganancia por trueque';
+      case WalletEntryType.SpentOnReward:
+        return 'Recompensa canjeada';
+      case WalletEntryType.AdminAdjustment:
+        return 'Ajuste de saldo';
+      case WalletEntryType.Bonus:
+        return 'Bono';
+      case WalletEntryType.InternalTransferOut:
         return 'Trueque enviado';
-      case WalletEntryType.TradeReceived:
+      case WalletEntryType.InternalTransferIn:
         return 'Trueque recibido';
       case WalletEntryType.P2PDeposit:
         return 'Recarga P2P';
-      case WalletEntryType.P2PWithdrawal:
+      case WalletEntryType.P2PWithdraw:
         return 'Retiro P2P';
-      case WalletEntryType.Adjustment:
-        return 'Ajuste de saldo';
     }
   }
 
   IconData _getTypeIcon(WalletEntryType type) {
     switch (type) {
-      case WalletEntryType.Deposit:
+      case WalletEntryType.EarnedByTrade:
+      case WalletEntryType.InternalTransferIn:
       case WalletEntryType.P2PDeposit:
+      case WalletEntryType.Bonus:
         return Icons.add_circle_rounded;
-      case WalletEntryType.Withdrawal:
-      case WalletEntryType.P2PWithdrawal:
+      case WalletEntryType.SpentOnReward:
+      case WalletEntryType.InternalTransferOut:
+      case WalletEntryType.P2PWithdraw:
         return Icons.remove_circle_rounded;
-      case WalletEntryType.TradeSent:
-        return Icons.send_rounded;
-      case WalletEntryType.TradeReceived:
-        return Icons.call_received_rounded;
-      case WalletEntryType.Adjustment:
+      case WalletEntryType.AdminAdjustment:
         return Icons.tune_rounded;
     }
   }

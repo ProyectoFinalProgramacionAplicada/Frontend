@@ -18,9 +18,9 @@ class WalletEntryDto {
     final rawType = json['type'];
     final typeIndex = rawType is int ? rawType : int.tryParse('$rawType') ?? 0;
     final parsedType =
-        (typeIndex >= 0 && typeIndex < WalletEntryType.values.length)
-        ? WalletEntryType.values[typeIndex]
-        : WalletEntryType.Deposit;
+      (typeIndex >= 0 && typeIndex < WalletEntryType.values.length)
+      ? WalletEntryType.values[typeIndex]
+      : WalletEntryType.EarnedByTrade;
 
     return WalletEntryDto(
       id: json['id'],
