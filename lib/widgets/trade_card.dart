@@ -26,14 +26,19 @@ class TradeCard extends StatelessWidget {
 
     final currentUser = auth.currentUser;
     final currentUserId = currentUser?.id;
-    final isSeller = currentUserId != null && currentUserId == trade.listingOwnerId;
-    final isInitiator = currentUserId != null && currentUserId == trade.initiatorUserId;
-    final isParticipant = currentUserId != null &&
-      (currentUserId == trade.listingOwnerId || currentUserId == trade.initiatorUserId);
+    final isSeller =
+        currentUserId != null && currentUserId == trade.listingOwnerId;
+    final isInitiator =
+        currentUserId != null && currentUserId == trade.initiatorUserId;
+    final isParticipant =
+        currentUserId != null &&
+        (currentUserId == trade.listingOwnerId ||
+            currentUserId == trade.initiatorUserId);
     final isPending = trade.status == TradeStatus.Pending;
-    final isLastOfferFromOther = isParticipant &&
-      trade.lastOfferByUserId != null &&
-      trade.lastOfferByUserId != currentUserId;
+    final isLastOfferFromOther =
+        isParticipant &&
+        trade.lastOfferByUserId != null &&
+        trade.lastOfferByUserId != currentUserId;
     final canAccept = isParticipant && isPending && isLastOfferFromOther;
     final canCounterOffer = isParticipant && isPending;
     final canReject = isSeller && isPending;
@@ -122,65 +127,66 @@ class TradeCard extends StatelessWidget {
             ),
 
             const SizedBox(height: 8),
-
-            Row(
-              children: [
-                if (trade.offeredListingId != null) ...[
-                  FutureBuilder<ListingDto>(
-                    future: ListingService().getListingById(
-                      trade.offeredListingId!,
-                    ),
-                    builder: (context, snap) {
-                      if (snap.hasData) {
-                        final l = snap.data!;
-                        return Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(6),
-                              child: Image.network(
-                                l.imageUrl,
-                                width: 40,
-                                height: 40,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Container(
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  if (trade.offeredListingId != null) ...[
+                    FutureBuilder<ListingDto>(
+                      future: ListingService().getListingById(
+                        trade.offeredListingId!,
+                      ),
+                      builder: (context, snap) {
+                        if (snap.hasData) {
+                          final l = snap.data!;
+                          return Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(6),
+                                child: Image.network(
+                                  l.imageUrl,
                                   width: 40,
                                   height: 40,
-                                  color: Colors.grey[300],
-                                  child: const Icon(Icons.image),
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Container(
+                                    width: 40,
+                                    height: 40,
+                                    color: Colors.grey[300],
+                                    child: const Icon(Icons.image),
+                                  ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            Chip(label: Text(l.title)),
-                          ],
+                              const SizedBox(width: 8),
+                              Chip(label: Text(l.title)),
+                            ],
+                          );
+                        }
+                        return Chip(
+                          label: Text(
+                            'Listing ofrecido: ${trade.offeredListingId}',
+                          ),
                         );
-                      }
-                      return Chip(
-                        label: Text(
-                          'Listing ofrecido: ${trade.offeredListingId}',
-                        ),
-                      );
-                    },
-                  ),
+                      },
+                    ),
+                  ],
+                  if (trade.offeredTrueCoins != null)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8.0),
+                      child: Chip(
+                        label: Text('Ofrece ${trade.offeredTrueCoins} TC'),
+                      ),
+                    ),
+                  if (trade.requestedTrueCoins != null)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8.0),
+                      child: Chip(
+                        label: Text('Solicita ${trade.requestedTrueCoins} TC'),
+                      ),
+                    ),
                 ],
-                if (trade.offeredTrueCoins != null)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 8.0),
-                    child: Chip(
-                      label: Text('Ofrece ${trade.offeredTrueCoins} TC'),
-                    ),
-                  ),
-                if (trade.requestedTrueCoins != null)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 8.0),
-                    child: Chip(
-                      label: Text('Solicita ${trade.requestedTrueCoins} TC'),
-                    ),
-                  ),
-              ],
+              ),
             ),
-
             const SizedBox(height: 12),
 
             SingleChildScrollView(
@@ -239,8 +245,7 @@ class TradeCard extends StatelessWidget {
                                       result['offeredTrueCoins'] as double?,
                                   requestedTrueCoins:
                                       result['requestedTrueCoins'] as double?,
-                                  targetListingId:
-                                      trade.targetListingId,
+                                  targetListingId: trade.targetListingId,
                                 );
 
                                 if (context.mounted) {
@@ -283,9 +288,9 @@ class TradeCard extends StatelessWidget {
                         } catch (e) {
                           if (context.mounted) {
                             final message = e.toString().replaceFirst(
-                                  'Exception: ',
-                                  '',
-                                );
+                              'Exception: ',
+                              '',
+                            );
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(message),

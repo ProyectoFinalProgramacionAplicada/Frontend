@@ -39,10 +39,10 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final provider = Provider.of<TradeProvider>(context, listen: false);
-      
+
       // 1. Cargar historial antiguo (API REST)
       await provider.fetchMessages(_tradeId!);
-      
+
       // 2. Conectarse al tiempo real (SignalR)
       await provider.joinTradeChat(_tradeId!);
     });
@@ -52,7 +52,10 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
   void dispose() {
     // Salir del grupo al cerrar la pantalla
     if (_tradeId != null) {
-      Provider.of<TradeProvider>(context, listen: false).leaveTradeChat(_tradeId!);
+      Provider.of<TradeProvider>(
+        context,
+        listen: false,
+      ).leaveTradeChat(_tradeId!);
     }
     _messageController.dispose();
     _scrollController.dispose();
@@ -193,8 +196,8 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
     final isCompleted = currentTrade.status == TradeStatus.Completed;
     final isCancelled = currentTrade.status == TradeStatus.Cancelled;
 
-    final String? otherUserAvatar = isSeller 
-        ? currentTrade.requesterAvatarUrl 
+    final String? otherUserAvatar = isSeller
+        ? currentTrade.requesterAvatarUrl
         : currentTrade.ownerAvatarUrl;
 
     return Scaffold(
@@ -275,8 +278,9 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                           builder: (_) => RateUserDialog(
                             toUserId: currentTrade.listingOwnerId,
                             tradeId: currentTrade.id,
-                            userName:
-                                "Vendedor", // Podrías pasar el nombre real si lo agregas al DTO
+                            userName: isBuyer
+                                ? (currentTrade.ownerName ?? "Vendedor")
+                                : (currentTrade.requesterName ?? "Comprador"),
                           ),
                         );
                       },
@@ -347,9 +351,12 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                   children: [
                     // Una animación simple de puntos o texto
                     SizedBox(
-                      width: 12, 
-                      height: 12, 
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.grey),
+                      width: 12,
+                      height: 12,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.grey,
+                      ),
                     ),
                     const SizedBox(width: 8),
                     Text(
@@ -401,11 +408,13 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                         textCapitalization: TextCapitalization.sentences,
                         onChanged: (text) {
                           if (text.isNotEmpty) {
-                            final myName = authProvider.currentUser?.displayName ?? "Alguien";
+                            final myName =
+                                authProvider.currentUser?.displayName ??
+                                "Alguien";
                             tradeProvider.notifyImTyping(_tradeId!, myName);
                           }
                         },
-                        
+
                         onSubmitted: (_) => _sendMessage(),
                       ),
                     ),

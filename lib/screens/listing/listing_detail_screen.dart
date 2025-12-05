@@ -368,29 +368,32 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                       color: _ListingDetailStyle.primaryColor.withOpacity(0.2),
                     ),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: _ListingDetailStyle.primaryColor.withOpacity(
-                            0.15,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: _ListingDetailStyle.primaryColor.withOpacity(
+                              0.15,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          borderRadius: BorderRadius.circular(8),
+                          child: Icon(
+                            Icons.monetization_on_rounded,
+                            color: _ListingDetailStyle.primaryColor,
+                            size: 22,
+                          ),
                         ),
-                        child: Icon(
-                          Icons.monetization_on_rounded,
-                          color: _ListingDetailStyle.primaryColor,
-                          size: 22,
+                        const SizedBox(width: 12),
+                        Text(
+                          '${_listing!.trueCoinValue.toStringAsFixed(_listing!.trueCoinValue % 1 == 0 ? 0 : 2)} TrueCoins',
+                          style: _ListingDetailStyle.priceStyle,
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        '${_listing!.trueCoinValue.toStringAsFixed(_listing!.trueCoinValue % 1 == 0 ? 0 : 2)} TrueCoins',
-                        style: _ListingDetailStyle.priceStyle,
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -500,12 +503,12 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                 child: CircleAvatar(
                   radius: 28,
                   backgroundImage: _listing!.ownerAvatarUrl != null
-                    ? NetworkImage(
-                      _listing!.ownerAvatarUrl!.startsWith('http')
-                        ? _listing!.ownerAvatarUrl!
-                        : '${AppConstants.apiBaseUrl}${_listing!.ownerAvatarUrl}',
-                    )
-    : null,
+                      ? NetworkImage(
+                          _listing!.ownerAvatarUrl!.startsWith('http')
+                              ? _listing!.ownerAvatarUrl!
+                              : '${AppConstants.apiBaseUrl}${_listing!.ownerAvatarUrl}',
+                        )
+                      : null,
                   backgroundColor: _ListingDetailStyle.primaryColor.withOpacity(
                     0.1,
                   ),
