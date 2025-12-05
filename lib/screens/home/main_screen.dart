@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:html' as html show window;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
@@ -14,7 +13,6 @@ import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/app_export.dart';
-import '../../core/constants/app_colors.dart';
 import '../../dto/listing/listing_create_dto.dart';
 import '../../dto/listing/listing_dto.dart';
 import '../../dto/trade/trade_dto.dart';

@@ -48,18 +48,21 @@ class TradeService {
         }
         if (raw is Map<String, dynamic>) {
           // Common wrappers
-          if (raw['data'] is List)
+          if (raw['data'] is List) {
             return (raw['data'] as List)
                 .map((e) => e as Map<String, dynamic>)
                 .toList();
-          if (raw['items'] is List)
+          }
+          if (raw['items'] is List) {
             return (raw['items'] as List)
                 .map((e) => e as Map<String, dynamic>)
                 .toList();
-          if (raw['messages'] is List)
+          }
+          if (raw['messages'] is List) {
             return (raw['messages'] as List)
                 .map((e) => e as Map<String, dynamic>)
                 .toList();
+          }
           // If it's a single object representing a message, return single-element list
           return [raw];
         }
