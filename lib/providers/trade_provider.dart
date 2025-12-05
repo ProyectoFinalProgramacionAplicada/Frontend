@@ -125,11 +125,9 @@ class TradeProvider extends ChangeNotifier {
     try {
       await _service.acceptTrade(id);
       await fetchMyTrades();
-    } on DioException catch (e) {
-      final message = e.response?.data is Map
-          ? (e.response?.data['message'] as String?)
-          : e.response?.data?.toString();
-      throw Exception(message ?? e.message ?? 'No se pudo aceptar el trueque');
+    } catch (e) {
+      // NO convierta el error aquí. Déjelo pasar para que la UI lo analice.
+      rethrow; 
     } finally {
       isLoading = false;
       notifyListeners();
