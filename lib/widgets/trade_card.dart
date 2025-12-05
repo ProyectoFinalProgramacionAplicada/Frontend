@@ -25,10 +25,18 @@ class TradeCard extends StatelessWidget {
     );
 
     final currentUser = auth.currentUser;
-    final isSeller =
-        currentUser != null && currentUser.id == trade.listingOwnerId;
-    final isInitiator =
-        currentUser != null && currentUser.id == trade.initiatorUserId;
+    final currentUserId = currentUser?.id;
+    final isSeller = currentUserId != null && currentUserId == trade.listingOwnerId;
+    final isInitiator = currentUserId != null && currentUserId == trade.initiatorUserId;
+    final isParticipant = currentUserId != null &&
+      (currentUserId == trade.listingOwnerId || currentUserId == trade.initiatorUserId);
+    final isPending = trade.status == TradeStatus.Pending;
+    final isLastOfferFromOther = isParticipant &&
+      trade.lastOfferByUserId != null &&
+      trade.lastOfferByUserId != currentUserId;
+    final canAccept = isParticipant && isPending && isLastOfferFromOther;
+    final canCounterOffer = isParticipant && isPending;
+    final canReject = isSeller && isPending;
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
@@ -199,101 +207,62 @@ class TradeCard extends StatelessWidget {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.orange,
                     ),
-                    onPressed: () async {
-                      final me = currentUser!;
-                      // Cargar listings propios y deduplicar por ID
-                      final rawMyListings = await listingProvider
-                          .getListingsByOwner(me.id);
-                      final Map<int, ListingDto> byMyId = {};
-                      for (final l in rawMyListings) {
-                        byMyId[l.id] = l;
-                      }
-                      final myListings = byMyId.values.toList();
+                    onPressed: canCounterOffer
+                        ? () async {
+                            final me = currentUser!;
+                            final rawMyListings = await listingProvider
+                                .getListingsByOwner(me.id);
+                            final Map<int, ListingDto> byMyId = {};
+                            for (final l in rawMyListings) {
+                              byMyId[l.id] = l;
+                            }
+                            final myListings = byMyId.values.toList();
 
-                      // Determinar el usuario opuesto y traer sus listings para poder solicitar cambio
-                      final opponentId = (me.id == trade.initiatorUserId)
-                          ? trade.listingOwnerId
-                          : trade.initiatorUserId;
-                      final rawOpponentListings = await listingProvider
-                          .getListingsByOwner(opponentId);
-                      final Map<int, ListingDto> byOppId = {};
-                      for (final l in rawOpponentListings) {
-                        byOppId[l.id] = l;
-                      }
-                      final opponentListings = byOppId.values.toList();
-
-                      final result = await showDialog<dynamic>(
-                        context: context,
-                        builder: (_) => TradeCounterOfferDialog(
-                          myListings: myListings,
-                          opponentListings: opponentListings,
-                          currentOfferedListingId: trade.offeredListingId,
-                          currentOfferedTrueCoins: trade.offeredTrueCoins,
-                          currentRequestedTrueCoins: trade.requestedTrueCoins,
-                        ),
-                      );
-
-                      if (result is Map) {
-                        try {
-                          final requestedOtherListingId =
-                              result['requestedOtherListingId'] as int?;
-                          String? message;
-                          if (requestedOtherListingId != null) {
-                            final reqTitle = opponentListings
-                                .firstWhere(
-                                  (l) => l.id == requestedOtherListingId,
-                                  orElse: () => ListingDto(
-                                    id: requestedOtherListingId,
-                                    title:
-                                        'publicación #$requestedOtherListingId',
-                                    trueCoinValue: 0.0,
-                                    isPublished: true,
-                                    imageUrl: '',
-                                    latitude: 0.0,
-                                    longitude: 0.0,
-                                    ownerUserId: opponentId,
-                                    ownerName: null,
-                                    ownerAvatarUrl: null,
-                                    ownerRating: 0.0,
-                                  ),
-                                )
-                                .title;
-                            message =
-                                'Por favor, cambia tu publicación a: $reqTitle (id: $requestedOtherListingId)';
-                          }
-
-                          await tradeProvider.sendCounterOffer(
-                            trade.id,
-                            offeredListingId:
-                                result['offeredListingId'] as int?,
-                            offeredTrueCoins:
-                                result['offeredTrueCoins'] as double?,
-                            requestedTrueCoins:
-                                result['requestedTrueCoins'] as double?,
-                            message: message,
-                            requestedOtherListingId:
-                                result['requestedOtherListingId'] as int?,
-                          );
-
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Contraoferta enviada'),
+                            final result = await showDialog<dynamic>(
+                              context: context,
+                              builder: (_) => TradeCounterOfferDialog(
+                                myListings: myListings,
+                                currentOfferedListingId: trade.offeredListingId,
+                                currentOfferedTrueCoins: trade.offeredTrueCoins,
+                                currentRequestedTrueCoins:
+                                    trade.requestedTrueCoins,
                               ),
                             );
+
+                            if (result is Map) {
+                              try {
+                                await tradeProvider.sendCounterOffer(
+                                  trade.id,
+                                  offeredListingId:
+                                      result['offeredListingId'] as int?,
+                                  offeredTrueCoins:
+                                      result['offeredTrueCoins'] as double?,
+                                  requestedTrueCoins:
+                                      result['requestedTrueCoins'] as double?,
+                                  targetListingId:
+                                      trade.targetListingId,
+                                );
+
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Contraoferta enviada'),
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Error: $e')),
+                                  );
+                                }
+                              }
+                            }
                           }
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Error: $e')),
-                            );
-                          }
-                        }
-                      }
-                    },
+                        : null,
                   ),
                   const SizedBox(width: 8),
-                  if (isSeller && trade.status == TradeStatus.Pending) ...[
+                  if (canAccept) ...[
                     ElevatedButton.icon(
                       icon: const Icon(Icons.check),
                       label: const Text('Aceptar'),
@@ -313,9 +282,13 @@ class TradeCard extends StatelessWidget {
                           }
                         } catch (e) {
                           if (context.mounted) {
+                            final message = e.toString().replaceFirst(
+                                  'Exception: ',
+                                  '',
+                                );
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Error: $e'),
+                                content: Text(message),
                                 backgroundColor: Colors.red,
                               ),
                             );
@@ -324,6 +297,8 @@ class TradeCard extends StatelessWidget {
                       },
                     ),
                     const SizedBox(width: 8),
+                  ],
+                  if (canReject) ...[
                     ElevatedButton.icon(
                       icon: const Icon(Icons.close),
                       label: const Text('Rechazar'),

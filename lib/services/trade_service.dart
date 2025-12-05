@@ -6,6 +6,7 @@ import '../dto/trade/trade_dto.dart';
 import '../dto/trade/trade_update_dto.dart';
 import '../dto/trade/trade_update_status_dto.dart';
 import '../dto/trade/trade_message_create_dto.dart';
+import '../dto/trade/trade_counter_offer_dto.dart';
 import 'package:truekapp/dto/trade/trade_message_dto.dart';
 
 class TradeService {
@@ -17,6 +18,10 @@ class TradeService {
 
   Future<void> updateTrade(int id, TradeUpdateDto dto) async {
     await _dio.put('/Trades/$id', data: dto.toJson());
+  }
+
+  Future<void> counterOfferTrade(int id, TradeCounterOfferDto dto) async {
+    await _dio.patch('/Trades/$id/counter', data: dto.toJson());
   }
 
   Future<void> updateTradeStatus(int id, TradeUpdateStatusDto dto) async {

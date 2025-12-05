@@ -6,12 +6,12 @@ import 'package:signalr_netcore/signalr_client.dart';
 import '../core/utils/app_constants.dart';
 import '../dto/trade/trade_dto.dart';
 import '../dto/trade/trade_create_dto.dart';
-import '../dto/trade/trade_update_dto.dart';
 import '../dto/trade/trade_update_status_dto.dart';
 import '../dto/trade/trade_message_create_dto.dart';
 import '../dto/trade/trade_message_dto.dart';
 import '../services/trade_service.dart';
 import '../services/listing_service.dart';
+import '../dto/trade/trade_counter_offer_dto.dart';
 
 class TradeProvider extends ChangeNotifier {
   final TradeService _service = TradeService();
@@ -123,6 +123,11 @@ class TradeProvider extends ChangeNotifier {
     try {
       await _service.acceptTrade(id);
       await fetchMyTrades();
+    } on DioException catch (e) {
+      final message = e.response?.data is Map
+          ? (e.response?.data['message'] as String?)
+          : e.response?.data?.toString();
+      throw Exception(message ?? e.message ?? 'No se pudo aceptar el trueque');
     } finally {
       isLoading = false;
       notifyListeners();
@@ -166,7 +171,7 @@ class TradeProvider extends ChangeNotifier {
     double? offeredTrueCoins,
     double? requestedTrueCoins,
     String? message,
-    int? requestedOtherListingId,
+    int? targetListingId,
   }) async {
     if (_pendingCounterOffers.contains(tradeId)) {
       throw Exception('Contraoferta en proceso...');
@@ -175,14 +180,14 @@ class TradeProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final dto = TradeUpdateDto(
+      final dto = TradeCounterOfferDto(
+        targetListingId: targetListingId,
         offeredListingId: offeredListingId,
         offeredTrueCoins: offeredTrueCoins,
         requestedTrueCoins: requestedTrueCoins,
         message: message,
-        requestedOtherListingId: requestedOtherListingId,
       );
-      await _service.updateTrade(tradeId, dto);
+      await _service.counterOfferTrade(tradeId, dto);
       await fetchMyTrades();
       if (_currentTrade?.id == tradeId) {
         _currentTrade = myTrades.firstWhere(
