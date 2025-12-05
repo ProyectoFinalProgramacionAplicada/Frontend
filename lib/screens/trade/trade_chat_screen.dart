@@ -159,7 +159,7 @@ void _showCompleteConfirmation(BuildContext context, int tradeId) {
                   }
                   // CASO 3: Otro error (Snack bar rojo)
                   else {
-                     ScaffoldMessenger.of(context).showSnackBar(
+                      ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text("Error: ${e.response?.data ?? e.message}"),
                         backgroundColor: Colors.red,
