@@ -56,7 +56,7 @@ class P2POrderProvider with ChangeNotifier {
       isCreating = true;
       notifyListeners();
 
-      final response = await _dio.post('P2POrders', data: request.toJson());
+      final response = await _dio.post('/P2POrders', data: request.toJson());
       final data = response.data;
 
       if (data is Map<String, dynamic>) {
@@ -79,7 +79,7 @@ class P2POrderProvider with ChangeNotifier {
   }
 
   Future<P2POrderDto> _fetchOrderById(int id) async {
-    final response = await _dio.get('P2POrders/$id');
+    final response = await _dio.get('/P2POrders/$id');
     final data = response.data;
     if (data is Map<String, dynamic>) {
       return P2POrderDto.fromJson(data);
@@ -92,12 +92,12 @@ class P2POrderProvider with ChangeNotifier {
       isLoadingOrderBook = true;
       notifyListeners();
 
-      final response = await _dio.get('P2POrders/book');
+      final response = await _dio.get('/P2POrders/book');
       final publicOrders = _mapResponseToOrders(response.data);
 
       List<P2POrderDto> personalOrders = [];
       try {
-        final mineResponse = await _dio.get('P2POrders/mine');
+        final mineResponse = await _dio.get('/P2POrders/mine');
         personalOrders = _mapResponseToOrders(mineResponse.data);
       } on DioException catch (error) {
         if (kDebugMode) {
@@ -145,7 +145,7 @@ class P2POrderProvider with ChangeNotifier {
       _takingOrderId = orderId;
       notifyListeners();
 
-      await _dio.patch('P2POrders/$orderId/take');
+      await _dio.patch('/P2POrders/$orderId/take');
       final updated = await _fetchOrderById(orderId);
       cacheTrackedOrder(updated);
       await fetchOrderBook();
