@@ -33,13 +33,14 @@ class TradeProvider extends ChangeNotifier {
 
   // --- VARIABLES SIGNALR ---
   HubConnection? _hubConnection;
-  bool get isLiveConnected => _hubConnection?.state == HubConnectionState.Connected;
+  bool get isLiveConnected =>
+      _hubConnection?.state == HubConnectionState.Connected;
 
   // --- VARIABLES PARA "ESCRIBIENDO..." (NUEVO) ---
   bool _isOtherUserTyping = false;
   bool get isOtherUserTyping => _isOtherUserTyping;
-  
-  Timer? _typingClearTimer; 
+
+  Timer? _typingClearTimer;
   DateTime? _lastTypingSentTime;
 
   void setCurrentTrade(TradeDto? trade) {
@@ -73,7 +74,8 @@ class TradeProvider extends ChangeNotifier {
   String? getCachedListingTitle(int listingId) => _listingTitleCache[listingId];
   bool isCreatePendingFor(int listingId) => _pendingCreates.contains(listingId);
   bool isSendPendingFor(int tradeId) => _pendingSends.contains(tradeId);
-  bool isCounterPendingFor(int tradeId) => _pendingCounterOffers.contains(tradeId);
+  bool isCounterPendingFor(int tradeId) =>
+      _pendingCounterOffers.contains(tradeId);
 
   // --- Trades CRUD / Flow ---
   Future<void> fetchMyTrades() async {
@@ -248,6 +250,9 @@ class TradeProvider extends ChangeNotifier {
     try {
       final dto = TradeMessageCreateDto(message: text);
       await _service.sendMessage(tradeId, dto);
+
+      // Después de enviar, recargar mensajes desde la API
+      await fetchMessages(tradeId);
     } catch (e) {
       rethrow;
     } finally {
@@ -261,9 +266,11 @@ class TradeProvider extends ChangeNotifier {
   // =================================================================
 
   Future<void> connectToChatHub() async {
-    if (_hubConnection != null && _hubConnection!.state == HubConnectionState.Connected) return;
+    if (_hubConnection != null &&
+        _hubConnection!.state == HubConnectionState.Connected)
+      return;
 
-    final baseUrl = AppConstants.apiBaseUrl.replaceAll('/api', ''); 
+    final baseUrl = AppConstants.apiBaseUrl.replaceAll('/api', '');
     final hubUrl = '$baseUrl/chatHub';
 
     print("🔌 Conectando a SignalR: $hubUrl");
@@ -290,7 +297,7 @@ class TradeProvider extends ChangeNotifier {
     if (args != null && args.isNotEmpty) {
       // Al llegar un mensaje, dejamos de mostrar "Escribiendo..." inmediatamente
       _isOtherUserTyping = false;
-      
+
       final msgMap = args[0] as Map<String, dynamic>;
       final incomingTradeId = msgMap['tradeId']; // ID del backend
 
@@ -303,10 +310,13 @@ class TradeProvider extends ChangeNotifier {
       );
 
       // Si tenemos la lista cargada, actualizamos
-      if (incomingTradeId != null && _messagesByTrade.containsKey(incomingTradeId)) {
+      if (incomingTradeId != null &&
+          _messagesByTrade.containsKey(incomingTradeId)) {
         final currentMsgs = _messagesByTrade[incomingTradeId] ?? [];
         if (!currentMsgs.any((m) => m.id == newMessage.id)) {
-          _messagesByTrade[incomingTradeId] = [...currentMsgs, newMessage];
+          _messagesByTrade[incomingTradeId] = List<TradeMessageDto>.from(
+            currentMsgs,
+          )..add(newMessage);
           notifyListeners();
         }
       }
@@ -333,14 +343,17 @@ class TradeProvider extends ChangeNotifier {
     if (!isLiveConnected) return;
 
     final now = DateTime.now();
-    if (_lastTypingSentTime != null && 
+    if (_lastTypingSentTime != null &&
         now.difference(_lastTypingSentTime!) < const Duration(seconds: 2)) {
-      return; 
+      return;
     }
 
     _lastTypingSentTime = now;
     try {
-      await _hubConnection?.invoke("SendTyping", args: [tradeId.toString(), myName]);
+      await _hubConnection?.invoke(
+        "SendTyping",
+        args: [tradeId.toString(), myName],
+      );
     } catch (e) {
       print("Error enviando typing: $e");
     }
@@ -349,8 +362,17 @@ class TradeProvider extends ChangeNotifier {
   // Unirse al grupo
   Future<void> joinTradeChat(int tradeId) async {
     await connectToChatHub();
+
+    // Agrega esta línea para inicializar la lista de mensajes vacía si no existe
+    if (!_messagesByTrade.containsKey(tradeId)) {
+      _messagesByTrade[tradeId] = [];
+    }
+
     if (isLiveConnected) {
-      await _hubConnection?.invoke("JoinTradeGroup", args: [tradeId.toString()]);
+      await _hubConnection?.invoke(
+        "JoinTradeGroup",
+        args: [tradeId.toString()],
+      );
       print("🔊 Unido al grupo del trade $tradeId");
     }
   }
@@ -358,9 +380,12 @@ class TradeProvider extends ChangeNotifier {
   // Salir del grupo
   Future<void> leaveTradeChat(int tradeId) async {
     if (isLiveConnected) {
-      await _hubConnection?.invoke("LeaveTradeGroup", args: [tradeId.toString()]);
+      await _hubConnection?.invoke(
+        "LeaveTradeGroup",
+        args: [tradeId.toString()],
+      );
       print("🔇 Salido del grupo del trade $tradeId");
-      
+
       // Limpiar estado al salir
       _isOtherUserTyping = false;
       _typingClearTimer?.cancel();
