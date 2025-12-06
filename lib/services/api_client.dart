@@ -14,7 +14,7 @@ class ApiClient {
         // Backend en Azure (desplegado con LoginResponseDto)
         // IMPORTANTE: Si estás probando en emulador Android localmente, recuerda usar 'http://10.0.2.2:5084/api'
         // Si estás usando el backend ya publicado en Azure, deja esta URL:
-        baseUrl: 'http://localhost:5129/api',
+        baseUrl: 'https://app-251203232643.azurewebsites.net/api',
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 10),
         headers: {'Content-Type': 'application/json'},
