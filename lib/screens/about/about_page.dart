@@ -28,15 +28,24 @@ class AboutPage extends StatelessWidget {
         ),
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: isMobile ? 24 : 32,
-              vertical: isMobile ? 20 : 32,
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isMobile ? 24 : 32,
+                    vertical: isMobile ? 20 : 32,
+                  ),
+                  child: isDesktop
+                      ? _buildDesktopLayout()
+                      : _buildMobileLayout(),
+                ),
+              ),
             ),
-            child: isDesktop ? _buildDesktopLayout() : _buildMobileLayout(),
-          ),
+            _buildFooterFixed(),
+          ],
         ),
       ),
     );
@@ -89,7 +98,7 @@ class AboutPage extends StatelessWidget {
             _buildHeader(),
             const SizedBox(height: 32),
 
-            // Tres secciones informativas en fila
+            // Tres secciones informativas en fila CON ALTURA MÍNIMA IGUAL
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -101,28 +110,28 @@ class AboutPage extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 32),
-            _buildValuesSection(),
-            const SizedBox(height: 48),
 
-            // Primera fila: Info Card + Team
+            // LAYOUT COMO EL DIBUJO: Dos columnas
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(flex: 1, child: _buildInfoCard()),
+                // COLUMNA IZQUIERDA: Valores + Equipo
+                Expanded(
+                  flex: 1,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildValuesSection(),
+                      const SizedBox(height: 32),
+                      _buildTeamSection(),
+                    ],
+                  ),
+                ),
                 const SizedBox(width: 32),
-                Expanded(flex: 1, child: _buildTeamSection()),
+
+                // COLUMNA DERECHA: Reglas de Uso
+                Expanded(flex: 1, child: _buildRulesSection()),
               ],
-            ),
-            const SizedBox(height: 32),
-
-            // Segunda fila: Rules (full width pero en grid interno)
-            _buildRulesSection(),
-            const SizedBox(height: 32),
-
-            // Footer centrado
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 600),
-              child: _buildFooter(),
             ),
             const SizedBox(height: 40),
           ],
@@ -785,63 +794,70 @@ class AboutPage extends StatelessWidget {
   //                     ABOUT SECTION
   // ============================================================
   Widget _buildAboutSection() {
-    return Container(
-      padding: const EdgeInsets.all(28),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color(0xFFE2E8F0).withOpacity(0.5),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF166534).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.info_outline_rounded,
-                  color: Color(0xFF166534),
-                  size: 20,
-                ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isDesktop = MediaQuery.of(context).size.width >= 1024;
+
+        return Container(
+          constraints: isDesktop ? const BoxConstraints(minHeight: 260) : null,
+          padding: const EdgeInsets.all(28),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: const Color(0xFFE2E8F0).withOpacity(0.5),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 20,
+                offset: const Offset(0, 6),
               ),
-              const SizedBox(width: 12),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF166534).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.info_outline_rounded,
+                      color: Color(0xFF166534),
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    '¿Qué es TruekApp?',
+                    style: GoogleFonts.inter(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF0F172A),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
               Text(
-                '¿Qué es TruekApp?',
+                'TruekApp es una plataforma innovadora diseñada para facilitar el intercambio de productos y servicios entre usuarios de manera segura, transparente y eficiente. Utilizamos un sistema de monedas virtuales llamado TrueCoins que permite establecer valores referenciales para cada artículo, haciendo que el proceso de trueque sea justo y equitativo para todas las partes involucradas.',
                 style: GoogleFonts.inter(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF0F172A),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w400,
+                  color: const Color(0xFF64748B),
+                  height: 1.6,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            'TruekApp es una plataforma innovadora diseñada para facilitar el intercambio de productos y servicios entre usuarios de manera segura, transparente y eficiente. Utilizamos un sistema de monedas virtuales llamado TrueCoins que permite establecer valores referenciales para cada artículo, haciendo que el proceso de trueque sea justo y equitativo para todas las partes involucradas.',
-            style: GoogleFonts.inter(
-              fontSize: 15,
-              fontWeight: FontWeight.w400,
-              color: const Color(0xFF64748B),
-              height: 1.6,
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -849,63 +865,70 @@ class AboutPage extends StatelessWidget {
   //                     MISSION SECTION
   // ============================================================
   Widget _buildMissionSection() {
-    return Container(
-      padding: const EdgeInsets.all(28),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color(0xFF3B82F6).withOpacity(0.2),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF3B82F6).withOpacity(0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF3B82F6).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.rocket_launch_rounded,
-                  color: Color(0xFF3B82F6),
-                  size: 20,
-                ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isDesktop = MediaQuery.of(context).size.width >= 1024;
+
+        return Container(
+          constraints: isDesktop ? const BoxConstraints(minHeight: 260) : null,
+          padding: const EdgeInsets.all(28),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: const Color(0xFF3B82F6).withOpacity(0.2),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF3B82F6).withOpacity(0.08),
+                blurRadius: 20,
+                offset: const Offset(0, 6),
               ),
-              const SizedBox(width: 12),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF3B82F6).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.rocket_launch_rounded,
+                      color: Color(0xFF3B82F6),
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Nuestra Misión',
+                    style: GoogleFonts.inter(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF0F172A),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
               Text(
-                'Nuestra Misión',
+                'Revolucionar la forma en que las personas intercambian bienes y servicios, promoviendo una economía colaborativa basada en la confianza, transparencia y sostenibilidad. Buscamos crear una comunidad donde cada usuario pueda encontrar valor en lo que otros ofrecen y viceversa.',
                 style: GoogleFonts.inter(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF0F172A),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w400,
+                  color: const Color(0xFF64748B),
+                  height: 1.6,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            'Revolucionar la forma en que las personas intercambian bienes y servicios, promoviendo una economía colaborativa basada en la confianza, transparencia y sostenibilidad. Buscamos crear una comunidad donde cada usuario pueda encontrar valor en lo que otros ofrecen y viceversa.',
-            style: GoogleFonts.inter(
-              fontSize: 15,
-              fontWeight: FontWeight.w400,
-              color: const Color(0xFF64748B),
-              height: 1.6,
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -913,63 +936,70 @@ class AboutPage extends StatelessWidget {
   //                     HISTORY SECTION
   // ============================================================
   Widget _buildHistorySection() {
-    return Container(
-      padding: const EdgeInsets.all(28),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color(0xFF8B5CF6).withOpacity(0.2),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF8B5CF6).withOpacity(0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF8B5CF6).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.history_rounded,
-                  color: Color(0xFF8B5CF6),
-                  size: 20,
-                ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isDesktop = MediaQuery.of(context).size.width >= 1024;
+
+        return Container(
+          constraints: isDesktop ? const BoxConstraints(minHeight: 260) : null,
+          padding: const EdgeInsets.all(28),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: const Color(0xFF8B5CF6).withOpacity(0.2),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF8B5CF6).withOpacity(0.08),
+                blurRadius: 20,
+                offset: const Offset(0, 6),
               ),
-              const SizedBox(width: 12),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF8B5CF6).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.history_rounded,
+                      color: Color(0xFF8B5CF6),
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Nuestra Historia',
+                    style: GoogleFonts.inter(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF0F172A),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
               Text(
-                'Nuestra Historia',
+                'TruekApp nació en 2025 como un proyecto universitario en Santa Cruz de la Sierra, Bolivia, con la visión de revitalizar la antigua práctica del trueque mediante tecnología moderna. Lo que comenzó como una idea simple se transformó en una plataforma completa que hoy conecta a cientos de usuarios.',
                 style: GoogleFonts.inter(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF0F172A),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w400,
+                  color: const Color(0xFF64748B),
+                  height: 1.6,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            'TruekApp nació en 2025 como un proyecto universitario en Santa Cruz de la Sierra, Bolivia, con la visión de revitalizar la antigua práctica del trueque mediante tecnología moderna. Lo que comenzó como una idea simple se transformó en una plataforma completa que hoy conecta a cientos de usuarios.',
-            style: GoogleFonts.inter(
-              fontSize: 15,
-              fontWeight: FontWeight.w400,
-              color: const Color(0xFF64748B),
-              height: 1.6,
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -1009,10 +1039,12 @@ class AboutPage extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isDesktop = constraints.maxWidth >= 1024;
+        final isMobile = constraints.maxWidth < 600;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Título alineado como "Reglas de Uso"
             Row(
               children: [
                 Container(
@@ -1040,38 +1072,73 @@ class AboutPage extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // Grid en desktop, lista en móvil
+            // Grid 2x2 en desktop, 1 columna en mobile
             if (isDesktop)
-              Wrap(
-                spacing: 16,
-                runSpacing: 16,
-                children: values
-                    .map(
-                      (v) => SizedBox(
-                        width: (constraints.maxWidth - 48) / 4,
+              Column(
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
                         child: _buildValueCard(
-                          v['icon'] as IconData,
-                          v['title']!,
-                          v['description']!,
-                          v['color'] as Color,
+                          values[0]['icon'] as IconData,
+                          values[0]['title']!,
+                          values[0]['description']!,
+                          values[0]['color'] as Color,
+                          isDesktop,
                         ),
                       ),
-                    )
-                    .toList(),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildValueCard(
+                          values[1]['icon'] as IconData,
+                          values[1]['title']!,
+                          values[1]['description']!,
+                          values[1]['color'] as Color,
+                          isDesktop,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: _buildValueCard(
+                          values[2]['icon'] as IconData,
+                          values[2]['title']!,
+                          values[2]['description']!,
+                          values[2]['color'] as Color,
+                          isDesktop,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildValueCard(
+                          values[3]['icon'] as IconData,
+                          values[3]['title']!,
+                          values[3]['description']!,
+                          values[3]['color'] as Color,
+                          isDesktop,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               )
             else
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
+              Column(
                 children: values
                     .map(
-                      (v) => SizedBox(
-                        width: (constraints.maxWidth - 12) / 2,
+                      (v) => Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
                         child: _buildValueCard(
                           v['icon'] as IconData,
                           v['title']!,
                           v['description']!,
                           v['color'] as Color,
+                          false,
                         ),
                       ),
                     )
@@ -1088,9 +1155,11 @@ class AboutPage extends StatelessWidget {
     String title,
     String description,
     Color accentColor,
+    bool isDesktop,
   ) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      constraints: isDesktop ? const BoxConstraints(minHeight: 90) : null,
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -1107,31 +1176,80 @@ class AboutPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: accentColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: accentColor, size: 20),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: accentColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Icon(icon, color: accentColor, size: 16),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF0F172A),
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Text(
-            title,
+            description,
             style: GoogleFonts.inter(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF0F172A),
+              fontSize: 12,
+              fontWeight: FontWeight.w400,
+              color: const Color(0xFF64748B),
+              height: 1.3,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
+  //                     FOOTER FIJO
+  // ============================================================
+  Widget _buildFooterFixed() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: const Color(0xFFE2E8F0).withOpacity(0.5),
+            width: 1,
+          ),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Hecho con 💚 en Santa Cruz, Bolivia',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF166534),
             ),
           ),
           const SizedBox(height: 6),
           Text(
-            description,
+            'Universidad Privada de Santa Cruz de la Sierra',
+            textAlign: TextAlign.center,
             style: GoogleFonts.inter(
               fontSize: 13,
               fontWeight: FontWeight.w400,
               color: const Color(0xFF64748B),
-              height: 1.4,
             ),
           ),
         ],
