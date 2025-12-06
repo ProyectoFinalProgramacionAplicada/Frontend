@@ -127,7 +127,7 @@ class TradeProvider extends ChangeNotifier {
       await fetchMyTrades();
     } catch (e) {
       // NO convierta el error aquí. Déjelo pasar para que la UI lo analice.
-      rethrow; 
+      rethrow;
     } finally {
       isLoading = false;
       notifyListeners();
@@ -265,8 +265,9 @@ class TradeProvider extends ChangeNotifier {
 
   Future<void> connectToChatHub() async {
     if (_hubConnection != null &&
-        _hubConnection!.state == HubConnectionState.Connected)
+        _hubConnection!.state == HubConnectionState.Connected) {
       return;
+    }
 
     final baseUrl = AppConstants.apiBaseUrl.replaceAll('/api', '');
     final hubUrl = '$baseUrl/chatHub';
