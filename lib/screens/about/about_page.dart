@@ -32,8 +32,8 @@ class AboutPage extends StatelessWidget {
           physics: const BouncingScrollPhysics(),
           child: Padding(
             padding: EdgeInsets.symmetric(
-              horizontal: isMobile ? 24 : 48,
-              vertical: isMobile ? 20 : 40,
+              horizontal: isMobile ? 24 : 32,
+              vertical: isMobile ? 20 : 32,
             ),
             child: isDesktop ? _buildDesktopLayout() : _buildMobileLayout(),
           ),
@@ -54,6 +54,14 @@ class AboutPage extends StatelessWidget {
           children: [
             _buildHeader(),
             const SizedBox(height: 36),
+            _buildAboutSection(),
+            const SizedBox(height: 24),
+            _buildMissionSection(),
+            const SizedBox(height: 24),
+            _buildHistorySection(),
+            const SizedBox(height: 24),
+            _buildValuesSection(),
+            const SizedBox(height: 32),
             _buildInfoCard(),
             const SizedBox(height: 32),
             _buildTeamSection(),
@@ -74,11 +82,26 @@ class AboutPage extends StatelessWidget {
   Widget _buildDesktopLayout() {
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1400),
+        constraints: const BoxConstraints(maxWidth: 1600),
         child: Column(
           children: [
             // Header centrado
             _buildHeader(),
+            const SizedBox(height: 32),
+
+            // Tres secciones informativas en fila
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: _buildAboutSection()),
+                const SizedBox(width: 24),
+                Expanded(child: _buildMissionSection()),
+                const SizedBox(width: 24),
+                Expanded(child: _buildHistorySection()),
+              ],
+            ),
+            const SizedBox(height: 32),
+            _buildValuesSection(),
             const SizedBox(height: 48),
 
             // Primera fila: Info Card + Team
@@ -151,7 +174,7 @@ class AboutPage extends StatelessWidget {
         const SizedBox(height: 24),
 
         Text(
-          'Acerca de TruekApp',
+          'TruekApp',
           textAlign: TextAlign.center,
           style: GoogleFonts.inter(
             fontSize: 32,
@@ -159,18 +182,6 @@ class AboutPage extends StatelessWidget {
             color: const Color(0xFF0F172A),
             letterSpacing: -0.5,
             height: 1.2,
-          ),
-        ),
-        const SizedBox(height: 12),
-
-        Text(
-          'Reglas de uso y equipo de desarrollo',
-          textAlign: TextAlign.center,
-          style: GoogleFonts.inter(
-            fontSize: 15,
-            fontWeight: FontWeight.w400,
-            color: const Color(0xFF64748B),
-            height: 1.4,
           ),
         ),
       ],
@@ -305,21 +316,29 @@ class AboutPage extends StatelessWidget {
       {
         'name': 'Matías Castellanos Bedregal',
         'career': 'Ingeniería Mecatrónica y Robótica — UPSA',
+        'email': 'a2024112625@estudiantes.upsa.edu.bo',
+        'phone': '+591 4165321',
         'color': '0xFF8B5CF6', // Violeta
       },
       {
         'name': 'Diego Sebastián Orellana',
         'career': 'Ingeniería Industrial y de Sistemas — UPSA',
+        'email': 'diegoseb.orellana@upsa.edu.bo',
+        'phone': '+591 74666380',
         'color': '0xFF3B82F6', // Azul
       },
       {
         'name': 'Victoria Frias H. Muñoz',
         'career': 'Ingeniería Mecatrónica y Robótica — UPSA',
+        'email': 'a2024112803@upsa.edu.bo',
+        'phone': '+591 69191184',
         'color': '0xFFEC4899', // Rosa
       },
       {
         'name': 'Samuel Zárate Gamarra',
         'career': 'Ingeniería Industrial y de Sistemas — UPSA',
+        'email': 'samuel.zarateg@upsa.edu.bo',
+        'phone': '+591 77388125',
         'color': '0xFF10B981', // Verde claro
       },
     ];
@@ -358,6 +377,8 @@ class AboutPage extends StatelessWidget {
           (member) => _buildTeamMemberCard(
             member['name']!,
             member['career']!,
+            member['email']!,
+            member['phone']!,
             Color(int.parse(member['color']!)),
           ),
         ),
@@ -365,7 +386,13 @@ class AboutPage extends StatelessWidget {
     );
   }
 
-  Widget _buildTeamMemberCard(String name, String career, Color accentColor) {
+  Widget _buildTeamMemberCard(
+    String name,
+    String career,
+    String email,
+    String phone,
+    Color accentColor,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
       margin: const EdgeInsets.only(bottom: 12),
@@ -381,56 +408,93 @@ class AboutPage extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [accentColor, accentColor.withOpacity(0.7)],
-              ),
-            ),
-            child: Center(
-              child: Text(
-                name[0],
-                style: GoogleFonts.inter(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: GoogleFonts.inter(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF0F172A),
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [accentColor, accentColor.withOpacity(0.7)],
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  career,
+                child: Center(
+                  child: Text(
+                    name[0],
+                    style: GoogleFonts.inter(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: GoogleFonts.inter(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF0F172A),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      career,
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
+                        color: const Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              Icon(Icons.person_rounded, color: accentColor, size: 20),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Icon(Icons.email_rounded, color: accentColor, size: 16),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  email,
                   style: GoogleFonts.inter(
                     fontSize: 13,
                     fontWeight: FontWeight.w400,
                     color: const Color(0xFF64748B),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-
-          Icon(Icons.person_rounded, color: accentColor, size: 20),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Icon(Icons.phone_rounded, color: accentColor, size: 16),
+              const SizedBox(width: 8),
+              Text(
+                phone,
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
+                  color: const Color(0xFF64748B),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -445,56 +509,56 @@ class AboutPage extends StatelessWidget {
         'icon': Icons.verified_user_rounded,
         'title': 'Uso responsable',
         'description':
-            'Cada usuario debe actuar de forma ética y transparente.',
+            'TruekApp es una plataforma de intercambio; cada usuario es responsable de los productos que publica y de verificar los intercambios que realiza.',
         'color': const Color(0xFF166534), // Verde principal
       },
       {
         'icon': Icons.gavel_rounded,
-        'title': 'Prohibido contenido ilegal',
+        'title': 'Prohibiciones',
         'description':
-            'No se permiten artículos prohibidos, peligrosos o falsificados.',
+            'No se permite publicar objetos peligrosos, ilegales, falsificados o que infrinjan derechos de terceros.',
         'color': const Color(0xFFDC2626), // Rojo
       },
       {
         'icon': Icons.lightbulb_outline_rounded,
-        'title': 'Transparencia',
+        'title': 'Transparencia y precios',
         'description':
-            'Todo producto publicado debe incluir un valor real verificable.',
+            'Los productos deben incluir un valor referencial real, respaldado por precio o factura, para equilibrar el uso de truecoins.',
         'color': const Color(0xFFF59E0B), // Amarillo/Naranja
       },
       {
         'icon': Icons.handshake_rounded,
         'title': 'Interacciones entre usuarios',
         'description':
-            'TruekApp es un intermediario tecnológico sin responsabilidad directa.',
+            'Los acuerdos de intercambio se realizan directamente entre las partes. TruekApp funciona como intermediario tecnológico, no como vendedor.',
         'color': const Color(0xFF3B82F6), // Azul
       },
       {
         'icon': Icons.account_balance_wallet_rounded,
-        'title': 'TrueCoins informativas',
+        'title': 'Moneda virtual (truecoins)',
         'description':
-            'Los TrueCoins no tienen valor monetario, solo informativo.',
+            'No representa dinero real. Su propósito es facilitar equivalencias de valor para permitir intercambios justos.',
         'color': const Color(0xFF8B5CF6), // Violeta
       },
       {
         'icon': Icons.privacy_tip_rounded,
-        'title': 'Privacidad protegida',
+        'title': 'Privacidad',
         'description':
-            'Se utiliza únicamente la información esencial para el funcionamiento de la app.',
+            'TruekApp solo usa datos básicos necesarios para operar la cuenta del usuario. No se comparten datos con terceros.',
         'color': const Color(0xFF10B981), // Verde claro
       },
       {
         'icon': Icons.favorite_border_rounded,
-        'title': 'Comportamiento respetuoso',
+        'title': 'Seguridad y comportamiento',
         'description':
-            'No se toleran faltas de respeto, acoso, suplantación de identidad o fraude.',
+            'Está prohibido el acoso, fraude, suplantación o cualquier comportamiento que comprometa la experiencia de otros usuarios.',
         'color': const Color(0xFFEC4899), // Rosa
       },
       {
         'icon': Icons.block_rounded,
-        'title': 'Suspensión por fraude',
+        'title': 'Sanciones',
         'description':
-            'El incumplimiento de las reglas puede derivar en suspensión inmediata.',
+            'TruekApp puede suspender o eliminar cuentas que incumplan estas normas.',
         'color': const Color(0xFFEF4444), // Rojo intenso
       },
     ];
@@ -638,15 +702,8 @@ class AboutPage extends StatelessWidget {
   // ============================================================
   Widget _buildFooter() {
     final List<Map<String, dynamic>> contacts = [
-      {
-        'icon': Icons.language_rounded,
-        'text': 'app-250928235242.azurewebsites.net',
-      },
-      {'icon': Icons.email_rounded, 'text': 'victoria.frias@upsa.edu.bo'},
-      {'icon': Icons.email_rounded, 'text': 'matias.cb@upsa.edu.bo'},
-      {'icon': Icons.email_rounded, 'text': 'diegoseb.orellana@upsa.edu.bo'},
-      {'icon': Icons.email_rounded, 'text': 'samuel.zarateg@upsa.edu.bo'},
-      {'icon': Icons.phone_rounded, 'text': 'WhatsApp: +591 700-00000'},
+      {'icon': Icons.email_rounded, 'text': 'a2024112803@upsa.edu.bo'},
+      {'icon': Icons.phone_rounded, 'text': '+591 69191184'},
     ];
 
     return Container(
@@ -717,6 +774,364 @@ class AboutPage extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
+  //                     ABOUT SECTION
+  // ============================================================
+  Widget _buildAboutSection() {
+    return Container(
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFFE2E8F0).withOpacity(0.5),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF166534).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.info_outline_rounded,
+                  color: Color(0xFF166534),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                '¿Qué es TruekApp?',
+                style: GoogleFonts.inter(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF0F172A),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'TruekApp es una plataforma innovadora diseñada para facilitar el intercambio de productos y servicios entre usuarios de manera segura, transparente y eficiente. Utilizamos un sistema de monedas virtuales llamado TrueCoins que permite establecer valores referenciales para cada artículo, haciendo que el proceso de trueque sea justo y equitativo para todas las partes involucradas.',
+            style: GoogleFonts.inter(
+              fontSize: 15,
+              fontWeight: FontWeight.w400,
+              color: const Color(0xFF64748B),
+              height: 1.6,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
+  //                     MISSION SECTION
+  // ============================================================
+  Widget _buildMissionSection() {
+    return Container(
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFF3B82F6).withOpacity(0.2),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF3B82F6).withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF3B82F6).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.rocket_launch_rounded,
+                  color: Color(0xFF3B82F6),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Nuestra Misión',
+                style: GoogleFonts.inter(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF0F172A),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Revolucionar la forma en que las personas intercambian bienes y servicios, promoviendo una economía colaborativa basada en la confianza, transparencia y sostenibilidad. Buscamos crear una comunidad donde cada usuario pueda encontrar valor en lo que otros ofrecen y viceversa.',
+            style: GoogleFonts.inter(
+              fontSize: 15,
+              fontWeight: FontWeight.w400,
+              color: const Color(0xFF64748B),
+              height: 1.6,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
+  //                     HISTORY SECTION
+  // ============================================================
+  Widget _buildHistorySection() {
+    return Container(
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFF8B5CF6).withOpacity(0.2),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF8B5CF6).withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF8B5CF6).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.history_rounded,
+                  color: Color(0xFF8B5CF6),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Nuestra Historia',
+                style: GoogleFonts.inter(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF0F172A),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'TruekApp nació en 2025 como un proyecto universitario en Santa Cruz de la Sierra, Bolivia, con la visión de revitalizar la antigua práctica del trueque mediante tecnología moderna. Lo que comenzó como una idea simple se transformó en una plataforma completa que hoy conecta a cientos de usuarios.',
+            style: GoogleFonts.inter(
+              fontSize: 15,
+              fontWeight: FontWeight.w400,
+              color: const Color(0xFF64748B),
+              height: 1.6,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
+  //                     VALUES SECTION
+  // ============================================================
+  Widget _buildValuesSection() {
+    final List<Map<String, dynamic>> values = [
+      {
+        'icon': Icons.thumb_up_rounded,
+        'title': 'Confianza',
+        'description':
+            'Construimos relaciones basadas en la honestidad y transparencia.',
+        'color': const Color(0xFF166534),
+      },
+      {
+        'icon': Icons.people_rounded,
+        'title': 'Comunidad',
+        'description': 'Fomentamos conexiones auténticas entre usuarios.',
+        'color': const Color(0xFF3B82F6),
+      },
+      {
+        'icon': Icons.eco_rounded,
+        'title': 'Sostenibilidad',
+        'description':
+            'Promovemos el consumo responsable y la economía circular.',
+        'color': const Color(0xFF10B981),
+      },
+      {
+        'icon': Icons.security_rounded,
+        'title': 'Seguridad',
+        'description': 'Protegemos cada transacción e información personal.',
+        'color': const Color(0xFFF59E0B),
+      },
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isDesktop = constraints.maxWidth >= 1024;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF166534).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.star_rounded,
+                    color: Color(0xFF166534),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Nuestros Valores',
+                  style: GoogleFonts.inter(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF0F172A),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // Grid en desktop, lista en móvil
+            if (isDesktop)
+              Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                children: values
+                    .map(
+                      (v) => SizedBox(
+                        width: (constraints.maxWidth - 48) / 4,
+                        child: _buildValueCard(
+                          v['icon'] as IconData,
+                          v['title']!,
+                          v['description']!,
+                          v['color'] as Color,
+                        ),
+                      ),
+                    )
+                    .toList(),
+              )
+            else
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: values
+                    .map(
+                      (v) => SizedBox(
+                        width: (constraints.maxWidth - 12) / 2,
+                        child: _buildValueCard(
+                          v['icon'] as IconData,
+                          v['title']!,
+                          v['description']!,
+                          v['color'] as Color,
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildValueCard(
+    IconData icon,
+    String title,
+    String description,
+    Color accentColor,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: accentColor.withOpacity(0.2), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: accentColor.withOpacity(0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: accentColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: accentColor, size: 20),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            style: GoogleFonts.inter(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF0F172A),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            description,
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: FontWeight.w400,
+              color: const Color(0xFF64748B),
+              height: 1.4,
             ),
           ),
         ],
