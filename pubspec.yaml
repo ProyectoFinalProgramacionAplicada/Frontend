@@ -1,7 +1,8 @@
 name: truekapp
-description: "A new Flutter project."
+description: "TruekApp - Plataforma de trueque con TrueCoins. De Santa Cruz pal mundo."
 publish_to: 'none'
-version: 0.1.0
+version: 1.0.0
+homepage: https://app-250928235242.azurewebsites.net
 
 environment:
   sdk: ^3.9.2

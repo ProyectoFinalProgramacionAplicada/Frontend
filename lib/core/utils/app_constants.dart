@@ -1,4 +1,4 @@
 class AppConstants {
   static const String appName = "TruekApp";
-  static const String apiBaseUrl = "https://app-251203232643.azurewebsites.net";
+  static const String apiBaseUrl = "https://app-250928235242.azurewebsites.net";
 }

@@ -1,0 +1,1009 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+class AboutPage extends StatelessWidget {
+  const AboutPage({super.key});
+
+  // ============================================================
+  //                       BUILD PRINCIPAL
+  // ============================================================
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final screenWidth = size.width;
+    final isMobile = screenWidth < 600;
+    final isDesktop = screenWidth >= 1024;
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF9FAFB),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Color(0xFF166534),
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 24 : 32,
+                  vertical: isMobile ? 20 : 32,
+                ),
+                child: isDesktop ? _buildDesktopLayout() : _buildMobileLayout(),
+              ),
+            ),
+
+            // Footer SIEMPRE visible al final del scroll
+            SliverToBoxAdapter(child: _buildFooterFixed()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  //                     MOBILE LAYOUT
+  // ============================================================
+  Widget _buildMobileLayout() {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 520),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildHeader(),
+            const SizedBox(height: 36),
+            _buildAboutSection(isDesktop: false),
+            const SizedBox(height: 24),
+            _buildMissionSection(isDesktop: false),
+            const SizedBox(height: 24),
+            _buildHistorySection(isDesktop: false),
+            const SizedBox(height: 24),
+            _buildValuesSection(),
+            const SizedBox(height: 32),
+            _buildTeamSection(),
+            const SizedBox(height: 32),
+            _buildRulesSection(),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  //                     DESKTOP LAYOUT (Grid)
+  // ============================================================
+  Widget _buildDesktopLayout() {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1600),
+        child: Column(
+          children: [
+            // Header centrado
+            _buildHeader(),
+            const SizedBox(height: 32),
+
+            // Tres secciones informativas en fila CON ALTURA MÍNIMA IGUAL
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: _buildAboutSection(isDesktop: true)),
+                const SizedBox(width: 24),
+                Expanded(child: _buildMissionSection(isDesktop: true)),
+                const SizedBox(width: 24),
+                Expanded(child: _buildHistorySection(isDesktop: true)),
+              ],
+            ),
+            const SizedBox(height: 32),
+
+            // LAYOUT COMO EL DIBUJO: Dos columnas
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // COLUMNA IZQUIERDA: Valores + Equipo
+                Expanded(
+                  flex: 1,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildValuesSection(),
+                      const SizedBox(height: 32),
+                      _buildTeamSection(),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 32),
+
+                // COLUMNA DERECHA: Reglas de Uso
+                Expanded(flex: 1, child: _buildRulesSection()),
+              ],
+            ),
+            const SizedBox(height: 40),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  //                         HEADER
+  // ============================================================
+  Widget _buildHeader() {
+    return Column(
+      children: [
+        Container(
+          width: 100,
+          height: 100,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF166534).withOpacity(0.15),
+                blurRadius: 30,
+                spreadRadius: 5,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color(0xFF166534).withOpacity(0.08),
+                  const Color(0xFF166534).withOpacity(0.15),
+                ],
+              ),
+            ),
+            child: const Icon(
+              Icons.swap_horiz_rounded,
+              size: 60,
+              color: Color(0xFF166534),
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        Text(
+          'TruekApp',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.inter(
+            fontSize: 32,
+            fontWeight: FontWeight.w800,
+            color: const Color(0xFF0F172A),
+            letterSpacing: -0.5,
+            height: 1.2,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ============================================================
+  //                       TEAM SECTION
+  // ============================================================
+  Widget _buildTeamSection() {
+    final List<Map<String, String>> team = [
+      {
+        'name': 'Matías Castellanos Bedregal',
+        'career': 'Ingeniería Mecatrónica y Robótica — UPSA',
+        'email': 'a2024112625@estudiantes.upsa.edu.bo',
+        'phone': '+591 4165321',
+        'color': '0xFF8B5CF6', // Violeta
+      },
+      {
+        'name': 'Diego Sebastián Orellana',
+        'career': 'Ingeniería Industrial y de Sistemas — UPSA',
+        'email': 'a2024114415@estudiantes.upsa.edu.bo',
+        'phone': '+591 74666380',
+        'color': '0xFF3B82F6', // Azul
+      },
+      {
+        'name': 'Victoria Frias H. Muñoz',
+        'career': 'Ingeniería Mecatrónica y Robótica — UPSA',
+        'email': 'a2024112803@upsa.edu.bo',
+        'phone': '+591 69191184',
+        'color': '0xFFEC4899', // Rosa
+      },
+      {
+        'name': 'Samuel Zárate Gamarra',
+        'career': 'Ingeniería Industrial y de Sistemas — UPSA',
+        'email': 'a2024110835@estudiantes.upsa.edu.bo',
+        'phone': '+591 77388125',
+        'color': '0xFF10B981', // Verde claro
+      },
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF166534).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.groups_rounded,
+                color: Color(0xFF166534),
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Equipo de Desarrollo',
+              style: GoogleFonts.inter(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF0F172A),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+
+        ...team.map(
+          (member) => _buildTeamMemberCard(
+            member['name']!,
+            member['career']!,
+            member['email']!,
+            member['phone']!,
+            Color(int.parse(member['color']!)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTeamMemberCard(
+    String name,
+    String career,
+    String email,
+    String phone,
+    Color accentColor,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: accentColor.withOpacity(0.2), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: accentColor.withOpacity(0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [accentColor, accentColor.withOpacity(0.7)],
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    name[0],
+                    style: GoogleFonts.inter(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: GoogleFonts.inter(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF0F172A),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      career,
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
+                        color: const Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              Icon(Icons.person_rounded, color: accentColor, size: 20),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Icon(Icons.email_rounded, color: accentColor, size: 16),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  email,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
+                    color: const Color(0xFF64748B),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Icon(Icons.phone_rounded, color: accentColor, size: 16),
+              const SizedBox(width: 8),
+              Text(
+                phone,
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
+                  color: const Color(0xFF64748B),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
+  //                       RULES SECTION
+  // ============================================================
+  Widget _buildRulesSection() {
+    final List<Map<String, dynamic>> rules = [
+      {
+        'icon': Icons.verified_user_rounded,
+        'title': 'Uso responsable',
+        'description':
+            'TruekApp es una plataforma de intercambio; cada usuario es responsable de los productos que publica y de verificar los intercambios que realiza.',
+        'color': const Color(0xFF166534), // Verde principal
+      },
+      {
+        'icon': Icons.gavel_rounded,
+        'title': 'Prohibiciones',
+        'description':
+            'No se permite publicar objetos peligrosos, ilegales, falsificados o que infrinjan derechos de terceros.',
+        'color': const Color(0xFFDC2626), // Rojo
+      },
+      {
+        'icon': Icons.lightbulb_outline_rounded,
+        'title': 'Transparencia y precios',
+        'description':
+            'Los productos deben incluir un valor referencial real, respaldado por precio o factura, para equilibrar el uso de truecoins.',
+        'color': const Color(0xFFF59E0B), // Amarillo/Naranja
+      },
+      {
+        'icon': Icons.handshake_rounded,
+        'title': 'Interacciones entre usuarios',
+        'description':
+            'Los acuerdos de intercambio se realizan directamente entre las partes. TruekApp funciona como intermediario tecnológico, no como vendedor.',
+        'color': const Color(0xFF3B82F6), // Azul
+      },
+      {
+        'icon': Icons.account_balance_wallet_rounded,
+        'title': 'Moneda virtual (truecoins)',
+        'description':
+            'Su propósito es facilitar equivalencias de valor para permitir intercambios justos.',
+        'color': const Color(0xFF8B5CF6), // Violeta
+      },
+      {
+        'icon': Icons.privacy_tip_rounded,
+        'title': 'Privacidad',
+        'description':
+            'TruekApp solo usa datos básicos necesarios para operar la cuenta del usuario. No se comparten datos con terceros.',
+        'color': const Color(0xFF10B981), // Verde claro
+      },
+      {
+        'icon': Icons.favorite_border_rounded,
+        'title': 'Seguridad y comportamiento',
+        'description':
+            'Está prohibido el acoso, fraude, suplantación o cualquier comportamiento que comprometa la experiencia de otros usuarios.',
+        'color': const Color(0xFFEC4899), // Rosa
+      },
+      {
+        'icon': Icons.block_rounded,
+        'title': 'Sanciones',
+        'description':
+            'TruekApp puede suspender o eliminar cuentas que incumplan estas normas.',
+        'color': const Color(0xFFEF4444), // Rojo intenso
+      },
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF166534).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.rule_rounded,
+                color: Color(0xFF166534),
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Reglas de Uso',
+              style: GoogleFonts.inter(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF0F172A),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+
+        // Lista vertical de reglas
+        ...rules
+            .map(
+              (r) => _buildRuleCard(
+                r['icon'] as IconData,
+                r['title']!,
+                r['description']!,
+                r['color'] as Color,
+              ),
+            )
+            .toList(),
+      ],
+    );
+  }
+
+  Widget _buildRuleCard(
+    IconData icon,
+    String title,
+    String description,
+    Color accentColor,
+  ) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: accentColor.withOpacity(0.2), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: accentColor.withOpacity(0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: accentColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: accentColor, size: 24),
+          ),
+          const SizedBox(width: 16),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF0F172A),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  description,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    color: const Color(0xFF64748B),
+                    height: 1.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
+  //                     ABOUT SECTION
+  // ============================================================
+  Widget _buildAboutSection({required bool isDesktop}) {
+    return Container(
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFF166534).withOpacity(0.2),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF166534).withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF166534).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.info_outline_rounded,
+                  color: Color(0xFF166534),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                '¿Qué es TruekApp?',
+                style: GoogleFonts.inter(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF0F172A),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Plataforma que facilita el intercambio seguro y transparente de productos y servicios mediante un sistema de valor llamado TrueCoins. Ayuda a que cada trueque sea claro, justo y simple para todos los usuarios.',
+            style: GoogleFonts.inter(
+              fontSize: 15,
+              fontWeight: FontWeight.w400,
+              color: const Color(0xFF64748B),
+              height: 1.6,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
+  //                     MISSION SECTION
+  // ============================================================
+  Widget _buildMissionSection({required bool isDesktop}) {
+    return Container(
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFF3B82F6).withOpacity(0.2),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF3B82F6).withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF3B82F6).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.rocket_launch_rounded,
+                  color: Color(0xFF3B82F6),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Nuestra Misión',
+                style: GoogleFonts.inter(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF0F172A),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Transformar la forma en que las personas intercambian bienes y servicios, creando una comunidad basada en confianza, sostenibilidad y transparencia, donde todos puedan encontrar valor real en lo que otros ofrecen.',
+            style: GoogleFonts.inter(
+              fontSize: 15,
+              fontWeight: FontWeight.w400,
+              color: const Color(0xFF64748B),
+              height: 1.6,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
+  //                     HISTORY SECTION
+  // ============================================================
+  Widget _buildHistorySection({required bool isDesktop}) {
+    return Container(
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFF8B5CF6).withOpacity(0.2),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF8B5CF6).withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF8B5CF6).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.history_rounded,
+                  color: Color(0xFF8B5CF6),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Nuestra Historia',
+                style: GoogleFonts.inter(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF0F172A),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'TruekApp nació en 2025 como un proyecto universitario en Santa Cruz de la Sierra, buscando modernizar el trueque tradicional con tecnología accesible. Hoy se ha convertido en una plataforma que conecta a cientos de usuarios.',
+            style: GoogleFonts.inter(
+              fontSize: 15,
+              fontWeight: FontWeight.w400,
+              color: const Color(0xFF64748B),
+              height: 1.6,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
+  //                     VALUES SECTION (FIXED + PERFECT GRID)
+  // ============================================================
+  Widget _buildValuesSection() {
+    final List<Map<String, dynamic>> values = [
+      {
+        'icon': Icons.thumb_up_rounded,
+        'title': 'Confianza',
+        'description':
+            'Construimos relaciones basadas en la honestidad y transparencia.',
+        'color': const Color(0xFF166534),
+      },
+      {
+        'icon': Icons.people_rounded,
+        'title': 'Comunidad',
+        'description': 'Fomentamos conexiones auténticas entre usuarios.',
+        'color': const Color(0xFF3B82F6),
+      },
+      {
+        'icon': Icons.eco_rounded,
+        'title': 'Sostenibilidad',
+        'description':
+            'Promovemos el consumo responsable y la economía circular.',
+        'color': const Color(0xFF10B981),
+      },
+      {
+        'icon': Icons.security_rounded,
+        'title': 'Seguridad',
+        'description': 'Protegemos cada transacción e información personal.',
+        'color': const Color(0xFFF59E0B),
+      },
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 600;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Título
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF166534).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.star_rounded,
+                    color: Color(0xFF166534),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Nuestros Valores',
+                  style: GoogleFonts.inter(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF0F172A),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // Grid 2x2 en desktop, lista vertical en móvil
+            if (!isMobile)
+              Column(
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: _buildValueCard(
+                          values[0]['icon'] as IconData,
+                          values[0]['title']!,
+                          values[0]['description']!,
+                          values[0]['color'] as Color,
+                          true,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildValueCard(
+                          values[1]['icon'] as IconData,
+                          values[1]['title']!,
+                          values[1]['description']!,
+                          values[1]['color'] as Color,
+                          true,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: _buildValueCard(
+                          values[2]['icon'] as IconData,
+                          values[2]['title']!,
+                          values[2]['description']!,
+                          values[2]['color'] as Color,
+                          true,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildValueCard(
+                          values[3]['icon'] as IconData,
+                          values[3]['title']!,
+                          values[3]['description']!,
+                          values[3]['color'] as Color,
+                          true,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              )
+            else
+              // Lista vertical en móvil
+              Column(
+                children: values
+                    .map(
+                      (v) => Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: _buildValueCard(
+                          v['icon'] as IconData,
+                          v['title']!,
+                          v['description']!,
+                          v['color'] as Color,
+                          false,
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  // ✅ Método auxiliar con parámetro isDesktop
+  Widget _buildValueCard(
+    IconData icon,
+    String title,
+    String description,
+    Color accentColor,
+    bool isDesktop,
+  ) {
+    return Container(
+      height: isDesktop ? 120 : null,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: accentColor.withOpacity(0.2), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: accentColor.withOpacity(0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: accentColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Icon(icon, color: accentColor, size: 16),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF0F172A),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            description,
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+              color: const Color(0xFF64748B),
+              height: 1.3,
+            ),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
+  //                     FOOTER FIJO
+  // ============================================================
+  Widget _buildFooterFixed() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: const Color(0xFFE2E8F0).withOpacity(0.5),
+            width: 1,
+          ),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Hecho con 💚 en Santa Cruz, Bolivia',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF166534),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Universidad Privada de Santa Cruz de la Sierra',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: FontWeight.w400,
+              color: const Color(0xFF64748B),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

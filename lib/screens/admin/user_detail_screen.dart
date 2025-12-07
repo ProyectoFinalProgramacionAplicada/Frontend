@@ -47,6 +47,11 @@ class _UserDetailScreenState extends State<UserDetailScreen>
       curve: Curves.easeOut,
     );
     _animController.forward();
+
+    // Listener para actualizar los botones +/- cuando el usuario escribe
+    _amountController.addListener(() {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
@@ -396,15 +401,133 @@ class _UserDetailScreenState extends State<UserDetailScreen>
                     badge: 'ADMIN',
                     child: Column(
                       children: [
-                        _buildTextField(
-                          controller: _amountController,
-                          label: 'Monto',
-                          hint: 'Ej: 100 o -50 para debitar',
-                          icon: Icons.monetization_on_outlined,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                            signed: true,
-                          ),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Expanded(
+                              child: _buildTextField(
+                                controller: _amountController,
+                                label: 'Monto',
+                                hint: 'Ej: 100 o -50 para debitar',
+                                icon: Icons.monetization_on_outlined,
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                      decimal: true,
+                                      signed: true,
+                                    ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            // Botones + / - para móvil
+                            Container(
+                              height: 56,
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey.shade300),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                children: [
+                                  InkWell(
+                                    onTap: () {
+                                      final text = _amountController.text
+                                          .trim();
+                                      if (text.isEmpty) return;
+                                      // Si ya tiene signo, quitarlo; si no, agregar +
+                                      if (text.startsWith('-')) {
+                                        _amountController.text = text.substring(
+                                          1,
+                                        );
+                                      } else if (text.startsWith('+')) {
+                                        _amountController.text = text.substring(
+                                          1,
+                                        );
+                                      }
+                                      // Dejar el número sin signo (positivo)
+                                    },
+                                    borderRadius: const BorderRadius.only(
+                                      topLeft: Radius.circular(12),
+                                      bottomLeft: Radius.circular(12),
+                                    ),
+                                    child: Container(
+                                      width: 44,
+                                      height: 56,
+                                      alignment: Alignment.center,
+                                      decoration: BoxDecoration(
+                                        color:
+                                            _amountController.text.isNotEmpty &&
+                                                !_amountController.text
+                                                    .startsWith('-')
+                                            ? const Color(
+                                                0xFF10B981,
+                                              ).withOpacity(0.1)
+                                            : Colors.transparent,
+                                        borderRadius: const BorderRadius.only(
+                                          topLeft: Radius.circular(12),
+                                          bottomLeft: Radius.circular(12),
+                                        ),
+                                      ),
+                                      child: const Icon(
+                                        Icons.add,
+                                        color: Color(0xFF10B981),
+                                        size: 22,
+                                      ),
+                                    ),
+                                  ),
+                                  Container(
+                                    width: 1,
+                                    height: 56,
+                                    color: Colors.grey.shade300,
+                                  ),
+                                  InkWell(
+                                    onTap: () {
+                                      final text = _amountController.text
+                                          .trim();
+                                      if (text.isEmpty) return;
+                                      // Si ya tiene -, quitarlo; si no, agregarlo
+                                      if (text.startsWith('-')) {
+                                        _amountController.text = text.substring(
+                                          1,
+                                        );
+                                      } else if (text.startsWith('+')) {
+                                        _amountController.text =
+                                            '-${text.substring(1)}';
+                                      } else {
+                                        _amountController.text = '-$text';
+                                      }
+                                    },
+                                    borderRadius: const BorderRadius.only(
+                                      topRight: Radius.circular(12),
+                                      bottomRight: Radius.circular(12),
+                                    ),
+                                    child: Container(
+                                      width: 44,
+                                      height: 56,
+                                      alignment: Alignment.center,
+                                      decoration: BoxDecoration(
+                                        color:
+                                            _amountController.text.startsWith(
+                                              '-',
+                                            )
+                                            ? const Color(
+                                                0xFFEF4444,
+                                              ).withOpacity(0.1)
+                                            : Colors.transparent,
+                                        borderRadius: const BorderRadius.only(
+                                          topRight: Radius.circular(12),
+                                          bottomRight: Radius.circular(12),
+                                        ),
+                                      ),
+                                      child: const Icon(
+                                        Icons.remove,
+                                        color: Color(0xFFEF4444),
+                                        size: 22,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 12),
                         _buildTextField(
