@@ -111,27 +111,29 @@ class AboutPage extends StatelessWidget {
             ),
             const SizedBox(height: 32),
 
-            // LAYOUT COMO EL DIBUJO: Dos columnas
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // COLUMNA IZQUIERDA: Valores + Equipo
-                Expanded(
-                  flex: 1,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _buildValuesSection(),
-                      const SizedBox(height: 32),
-                      _buildTeamSection(),
-                    ],
+            // LAYOUT COMO EL DIBUJO: Dos columnas CON ALTURA IGUAL
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // COLUMNA IZQUIERDA: Valores + Equipo
+                  Expanded(
+                    flex: 1,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildValuesSection(),
+                        const SizedBox(height: 32),
+                        _buildTeamSection(),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(width: 32),
+                  const SizedBox(width: 32),
 
-                // COLUMNA DERECHA: Reglas de Uso
-                Expanded(flex: 1, child: _buildRulesSection()),
-              ],
+                  // COLUMNA DERECHA: Reglas de Uso
+                  Expanded(flex: 1, child: _buildRulesSection()),
+                ],
+              ),
             ),
             const SizedBox(height: 40),
           ],
@@ -572,73 +574,48 @@ class AboutPage extends StatelessWidget {
       },
     ];
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isDesktop = constraints.maxWidth >= 1024;
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
           children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF166534).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.rule_rounded,
-                    color: Color(0xFF166534),
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'Reglas de Uso',
-                  style: GoogleFonts.inter(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF0F172A),
-                  ),
-                ),
-              ],
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF166534).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.rule_rounded,
+                color: Color(0xFF166534),
+                size: 20,
+              ),
             ),
-            const SizedBox(height: 20),
-
-            // Grid en desktop, lista en móvil
-            if (isDesktop)
-              Wrap(
-                spacing: 16,
-                runSpacing: 16,
-                children: rules
-                    .map(
-                      (r) => SizedBox(
-                        width: (constraints.maxWidth - 16) / 2,
-                        child: _buildRuleCard(
-                          r['icon'] as IconData,
-                          r['title']!,
-                          r['description']!,
-                          r['color'] as Color,
-                        ),
-                      ),
-                    )
-                    .toList(),
-              )
-            else
-              ...rules
-                  .map(
-                    (r) => _buildRuleCard(
-                      r['icon'] as IconData,
-                      r['title']!,
-                      r['description']!,
-                      r['color'] as Color,
-                    ),
-                  )
-                  .toList(),
+            const SizedBox(width: 12),
+            Text(
+              'Reglas de Uso',
+              style: GoogleFonts.inter(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF0F172A),
+              ),
+            ),
           ],
-        );
-      },
+        ),
+        const SizedBox(height: 20),
+
+        // Lista vertical de reglas
+        ...rules
+            .map(
+              (r) => _buildRuleCard(
+                r['icon'] as IconData,
+                r['title']!,
+                r['description']!,
+                r['color'] as Color,
+              ),
+            )
+            .toList(),
+      ],
     );
   }
 
@@ -794,70 +771,64 @@ class AboutPage extends StatelessWidget {
   //                     ABOUT SECTION
   // ============================================================
   Widget _buildAboutSection() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isDesktop = MediaQuery.of(context).size.width >= 1024;
-
-        return Container(
-          constraints: isDesktop ? const BoxConstraints(minHeight: 260) : null,
-          padding: const EdgeInsets.all(28),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: const Color(0xFFE2E8F0).withOpacity(0.5),
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 20,
-                offset: const Offset(0, 6),
-              ),
-            ],
+    return Container(
+      constraints: const BoxConstraints(minHeight: 260),
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFFE2E8F0).withOpacity(0.5),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF166534).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.info_outline_rounded,
-                      color: Color(0xFF166534),
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    '¿Qué es TruekApp?',
-                    style: GoogleFonts.inter(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF0F172A),
-                    ),
-                  ),
-                ],
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF166534).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.info_outline_rounded,
+                  color: Color(0xFF166534),
+                  size: 20,
+                ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(width: 12),
               Text(
-                'TruekApp es una plataforma innovadora diseñada para facilitar el intercambio de productos y servicios entre usuarios de manera segura, transparente y eficiente. Utilizamos un sistema de monedas virtuales llamado TrueCoins que permite establecer valores referenciales para cada artículo, haciendo que el proceso de trueque sea justo y equitativo para todas las partes involucradas.',
+                '¿Qué es TruekApp?',
                 style: GoogleFonts.inter(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w400,
-                  color: const Color(0xFF64748B),
-                  height: 1.6,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF0F172A),
                 ),
               ),
             ],
           ),
-        );
-      },
+          const SizedBox(height: 16),
+          Text(
+            'TruekApp es una plataforma innovadora diseñada para facilitar el intercambio de productos y servicios entre usuarios de manera segura, transparente y eficiente. Utilizamos un sistema de monedas virtuales llamado TrueCoins que permite establecer valores referenciales para cada artículo, haciendo que el proceso de trueque sea justo y equitativo para todas las partes involucradas.',
+            style: GoogleFonts.inter(
+              fontSize: 15,
+              fontWeight: FontWeight.w400,
+              color: const Color(0xFF64748B),
+              height: 1.6,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -865,70 +836,64 @@ class AboutPage extends StatelessWidget {
   //                     MISSION SECTION
   // ============================================================
   Widget _buildMissionSection() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isDesktop = MediaQuery.of(context).size.width >= 1024;
-
-        return Container(
-          constraints: isDesktop ? const BoxConstraints(minHeight: 260) : null,
-          padding: const EdgeInsets.all(28),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: const Color(0xFF3B82F6).withOpacity(0.2),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF3B82F6).withOpacity(0.08),
-                blurRadius: 20,
-                offset: const Offset(0, 6),
-              ),
-            ],
+    return Container(
+      constraints: const BoxConstraints(minHeight: 260),
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFF3B82F6).withOpacity(0.2),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF3B82F6).withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF3B82F6).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.rocket_launch_rounded,
-                      color: Color(0xFF3B82F6),
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Nuestra Misión',
-                    style: GoogleFonts.inter(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF0F172A),
-                    ),
-                  ),
-                ],
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF3B82F6).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.rocket_launch_rounded,
+                  color: Color(0xFF3B82F6),
+                  size: 20,
+                ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(width: 12),
               Text(
-                'Revolucionar la forma en que las personas intercambian bienes y servicios, promoviendo una economía colaborativa basada en la confianza, transparencia y sostenibilidad. Buscamos crear una comunidad donde cada usuario pueda encontrar valor en lo que otros ofrecen y viceversa.',
+                'Nuestra Misión',
                 style: GoogleFonts.inter(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w400,
-                  color: const Color(0xFF64748B),
-                  height: 1.6,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF0F172A),
                 ),
               ),
             ],
           ),
-        );
-      },
+          const SizedBox(height: 16),
+          Text(
+            'Revolucionar la forma en que las personas intercambian bienes y servicios, promoviendo una economía colaborativa basada en la confianza, transparencia y sostenibilidad. Buscamos crear una comunidad donde cada usuario pueda encontrar valor en lo que otros ofrecen y viceversa.',
+            style: GoogleFonts.inter(
+              fontSize: 15,
+              fontWeight: FontWeight.w400,
+              color: const Color(0xFF64748B),
+              height: 1.6,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -936,77 +901,72 @@ class AboutPage extends StatelessWidget {
   //                     HISTORY SECTION
   // ============================================================
   Widget _buildHistorySection() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isDesktop = MediaQuery.of(context).size.width >= 1024;
-
-        return Container(
-          constraints: isDesktop ? const BoxConstraints(minHeight: 260) : null,
-          padding: const EdgeInsets.all(28),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: const Color(0xFF8B5CF6).withOpacity(0.2),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF8B5CF6).withOpacity(0.08),
-                blurRadius: 20,
-                offset: const Offset(0, 6),
-              ),
-            ],
+    return Container(
+      constraints: const BoxConstraints(minHeight: 260),
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFF8B5CF6).withOpacity(0.2),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF8B5CF6).withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF8B5CF6).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.history_rounded,
-                      color: Color(0xFF8B5CF6),
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Nuestra Historia',
-                    style: GoogleFonts.inter(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF0F172A),
-                    ),
-                  ),
-                ],
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF8B5CF6).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.history_rounded,
+                  color: Color(0xFF8B5CF6),
+                  size: 20,
+                ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(width: 12),
               Text(
-                'TruekApp nació en 2025 como un proyecto universitario en Santa Cruz de la Sierra, Bolivia, con la visión de revitalizar la antigua práctica del trueque mediante tecnología moderna. Lo que comenzó como una idea simple se transformó en una plataforma completa que hoy conecta a cientos de usuarios.',
+                'Nuestra Historia',
                 style: GoogleFonts.inter(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w400,
-                  color: const Color(0xFF64748B),
-                  height: 1.6,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF0F172A),
                 ),
               ),
             ],
           ),
-        );
-      },
+          const SizedBox(height: 16),
+          Text(
+            'TruekApp nació en 2025 como un proyecto universitario en Santa Cruz de la Sierra, Bolivia, con la visión de revitalizar la antigua práctica del trueque mediante tecnología moderna. Lo que comenzó como una idea simple se transformó en una plataforma completa que hoy conecta a cientos de usuarios.',
+            style: GoogleFonts.inter(
+              fontSize: 15,
+              fontWeight: FontWeight.w400,
+              color: const Color(0xFF64748B),
+              height: 1.6,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   // ============================================================
-  //                     VALUES SECTION
+  //                     VALUES SECTION (FIXED + PERFECT GRID)
   // ============================================================
   Widget _buildValuesSection() {
+    // ✅ Definir la lista de valores DENTRO del método
     final List<Map<String, dynamic>> values = [
       {
         'icon': Icons.thumb_up_rounded,
@@ -1036,120 +996,96 @@ class AboutPage extends StatelessWidget {
       },
     ];
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isDesktop = constraints.maxWidth >= 1024;
-        final isMobile = constraints.maxWidth < 600;
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Título
+        Row(
           children: [
-            // Título alineado como "Reglas de Uso"
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF166534).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.star_rounded,
+                color: Color(0xFF166534),
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Nuestros Valores',
+              style: GoogleFonts.inter(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF0F172A),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+
+        // Grid 2x2
+        Column(
+          children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF166534).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.star_rounded,
-                    color: Color(0xFF166534),
-                    size: 20,
+                Expanded(
+                  child: _buildValueCard(
+                    values[0]['icon'] as IconData,
+                    values[0]['title']!,
+                    values[0]['description']!,
+                    values[0]['color'] as Color,
+                    true,
                   ),
                 ),
-                const SizedBox(width: 12),
-                Text(
-                  'Nuestros Valores',
-                  style: GoogleFonts.inter(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF0F172A),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildValueCard(
+                    values[1]['icon'] as IconData,
+                    values[1]['title']!,
+                    values[1]['description']!,
+                    values[1]['color'] as Color,
+                    true,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
-
-            // Grid 2x2 en desktop, 1 columna en mobile
-            if (isDesktop)
-              Column(
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: _buildValueCard(
-                          values[0]['icon'] as IconData,
-                          values[0]['title']!,
-                          values[0]['description']!,
-                          values[0]['color'] as Color,
-                          isDesktop,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _buildValueCard(
-                          values[1]['icon'] as IconData,
-                          values[1]['title']!,
-                          values[1]['description']!,
-                          values[1]['color'] as Color,
-                          isDesktop,
-                        ),
-                      ),
-                    ],
+            const SizedBox(height: 16),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: _buildValueCard(
+                    values[2]['icon'] as IconData,
+                    values[2]['title']!,
+                    values[2]['description']!,
+                    values[2]['color'] as Color,
+                    true,
                   ),
-                  const SizedBox(height: 16),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: _buildValueCard(
-                          values[2]['icon'] as IconData,
-                          values[2]['title']!,
-                          values[2]['description']!,
-                          values[2]['color'] as Color,
-                          isDesktop,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _buildValueCard(
-                          values[3]['icon'] as IconData,
-                          values[3]['title']!,
-                          values[3]['description']!,
-                          values[3]['color'] as Color,
-                          isDesktop,
-                        ),
-                      ),
-                    ],
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildValueCard(
+                    values[3]['icon'] as IconData,
+                    values[3]['title']!,
+                    values[3]['description']!,
+                    values[3]['color'] as Color,
+                    true,
                   ),
-                ],
-              )
-            else
-              Column(
-                children: values
-                    .map(
-                      (v) => Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: _buildValueCard(
-                          v['icon'] as IconData,
-                          v['title']!,
-                          v['description']!,
-                          v['color'] as Color,
-                          false,
-                        ),
-                      ),
-                    )
-                    .toList(),
-              ),
+                ),
+              ],
+            ),
           ],
-        );
-      },
+        ),
+      ],
     );
   }
 
+  // ✅ Método auxiliar con parámetro isDesktop
   Widget _buildValueCard(
     IconData icon,
     String title,
@@ -1158,7 +1094,7 @@ class AboutPage extends StatelessWidget {
     bool isDesktop,
   ) {
     return Container(
-      constraints: isDesktop ? const BoxConstraints(minHeight: 90) : null,
+      height: isDesktop ? 140 : null,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -1174,7 +1110,6 @@ class AboutPage extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             children: [
@@ -1195,18 +1130,25 @@ class AboutPage extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                     color: const Color(0xFF0F172A),
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            description,
-            style: GoogleFonts.inter(
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
-              color: const Color(0xFF64748B),
-              height: 1.3,
+          Flexible(
+            fit: FlexFit.loose,
+            child: Text(
+              description,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+                color: const Color(0xFF64748B),
+                height: 1.3,
+              ),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
