@@ -8,6 +8,7 @@ import '../../services/auth_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../dto/auth/app_role.dart';
 import '../../widgets/floating_illustration.dart';
+import '../../widgets/fixed_domain_email_controller.dart';
 
 /// Pantalla de login rediseñada para TruekApp
 /// Inspirada en: https://dribbble.com/shots/16624797-LYD-Login-Screen-Animation
@@ -24,7 +25,8 @@ class _LoginScreenState extends State<LoginScreen>
   // ═══════════════════════════════════════════════════════════
   // CONTROLADORES (NO MODIFICAR - LÓGICA EXISTENTE)
   // ═══════════════════════════════════════════════════════════
-  final TextEditingController _emailController = TextEditingController();
+  final FixedDomainEmailController _emailController =
+      FixedDomainEmailController();
   final TextEditingController _passwordController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
@@ -186,7 +188,7 @@ class _LoginScreenState extends State<LoginScreen>
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final email = _emailController.text.trim();
+    final email = _emailController.email; // Usar .email en lugar de .text
     final password = _passwordController.text;
 
     setState(() => _isLoading = true);
@@ -256,7 +258,7 @@ class _LoginScreenState extends State<LoginScreen>
       context: context,
       barrierDismissible: false,
       builder: (ctx) =>
-          _ForgotPasswordDialog(initialEmail: _emailController.text.trim()),
+          _ForgotPasswordDialog(initialEmail: _emailController.email),
     );
   }
 
@@ -368,6 +370,7 @@ class _LoginScreenState extends State<LoginScreen>
     String? Function(String?)? validator,
     TextInputAction textInputAction = TextInputAction.next,
     void Function(String)? onFieldSubmitted,
+    TextInputType? keyboardType,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -393,6 +396,7 @@ class _LoginScreenState extends State<LoginScreen>
           validator: validator,
           textInputAction: textInputAction,
           onFieldSubmitted: onFieldSubmitted,
+          keyboardType: keyboardType,
           style: GoogleFonts.inter(
             fontSize: 15,
             fontWeight: FontWeight.w500,
@@ -538,11 +542,12 @@ class _LoginScreenState extends State<LoginScreen>
               _buildInputField(
                 controller: _emailController,
                 label: 'Email',
-                hint: 'tu@email.com',
+                hint: 'usuario@gmail.com',
                 icon: Icons.email_outlined,
                 focusNode: _emailFocusNode,
                 isFocused: _isEmailFocused,
                 validator: _validateEmail,
+                keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 18),
 

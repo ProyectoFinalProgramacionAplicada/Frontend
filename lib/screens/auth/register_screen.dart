@@ -9,6 +9,7 @@ import '../../dto/auth/user_register_dto.dart';
 import '../../dto/auth/app_role.dart';
 import '../../widgets/phone_input_field.dart';
 import '../../widgets/floating_illustration.dart';
+import '../../widgets/fixed_domain_email_controller.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -21,7 +22,7 @@ class _RegisterScreenState extends State<RegisterScreen>
     with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
+  final _emailController = FixedDomainEmailController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final Map<String, String?> _fieldErrors = {};
@@ -122,7 +123,7 @@ class _RegisterScreenState extends State<RegisterScreen>
       await auth.register(
         UserRegisterDto(
           displayName: _nameController.text.trim(),
-          email: _emailController.text.trim(),
+          email: _emailController.email,
           password: _passwordController.text,
           phone: _phoneNumber.isEmpty ? null : _phoneNumber,
           role: AppRole.User,
@@ -151,12 +152,24 @@ class _RegisterScreenState extends State<RegisterScreen>
         _showErrorSnackBar(msg);
       } else {
         final msg = e.toString().replaceAll('Exception: ', '');
-        _showErrorSnackBar(msg);
 
         final lower = msg.toLowerCase();
-        if (lower.contains('ya est') ||
+
+        // Detectar si es error de teléfono o email duplicado
+        final isPhoneError =
+            lower.contains('teléfono') ||
+            lower.contains('telefono') ||
+            lower.contains('phone');
+        final isEmailError =
+            lower.contains('email') || lower.contains('correo');
+
+        // Si es error de duplicado, solo mostrar el diálogo (no el SnackBar)
+        final isDuplicateError =
+            lower.contains('ya est') ||
             lower.contains('registrad') ||
-            lower.contains('already')) {
+            lower.contains('already');
+
+        if (isDuplicateError) {
           if (mounted) {
             showDialog<void>(
               context: context,
@@ -164,17 +177,96 @@ class _RegisterScreenState extends State<RegisterScreen>
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
-                title: Text(
-                  'Cuenta existente',
-                  style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                contentPadding: const EdgeInsets.all(24),
+                title: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEF2F2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        isPhoneError
+                            ? Icons.phone_android
+                            : Icons.email_outlined,
+                        color: const Color(0xFFDC2626),
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        isPhoneError
+                            ? 'Teléfono registrado'
+                            : 'Email registrado',
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 18,
+                          color: const Color(0xFF0F172A),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                content: Text('$msg\n\n¿Deseas ir a Iniciar sesión?'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      msg,
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: const Color(0xFF64748B),
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.info_outline,
+                            size: 20,
+                            color: Color(0xFF64748B),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              isPhoneError
+                                  ? '¿Ya tienes una cuenta? Inicia sesión'
+                                  : '¿Deseas iniciar sesión con esta cuenta?',
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                color: const Color(0xFF475569),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.of(ctx).pop(),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                    ),
                     child: Text(
-                      'Usar otro email',
-                      style: TextStyle(color: AppColors.neutralDark),
+                      isPhoneError ? 'Usar otro número' : 'Usar otro email',
+                      style: GoogleFonts.inter(
+                        color: const Color(0xFF64748B),
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                   ElevatedButton(
@@ -184,19 +276,30 @@ class _RegisterScreenState extends State<RegisterScreen>
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF166534),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
+                      elevation: 0,
                     ),
-                    child: const Text(
+                    child: Text(
                       'Ir a Login',
-                      style: TextStyle(color: Colors.white),
+                      style: GoogleFonts.inter(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
               ),
             );
           }
+        } else {
+          // Para otros errores (no duplicados), mostrar SnackBar
+          _showErrorSnackBar(msg);
         }
       }
     } finally {
@@ -639,7 +742,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                                         _buildInputField(
                                           controller: _emailController,
                                           label: 'Email',
-                                          hint: 'tu@email.com',
+                                          hint: 'usuario@gmail.com',
                                           prefixIcon: Icons.email_outlined,
                                           keyboardType:
                                               TextInputType.emailAddress,

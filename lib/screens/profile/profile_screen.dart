@@ -214,11 +214,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return const Scaffold(body: Center(child: Text("Sin sesión")));
     }
 
-String? fullAvatarUrl;
+    String? fullAvatarUrl;
     if (user.avatarUrl != null) {
       // Si la URL ya empieza con 'http', es de Azure (o externa) y la usamos tal cual
       if (user.avatarUrl!.startsWith('http')) {
-        fullAvatarUrl = user.avatarUrl; 
+        fullAvatarUrl = user.avatarUrl;
       } else {
         // Si no, asumimos que es una ruta relativa antigua y le pegamos el dominio
         fullAvatarUrl = '${AppConstants.apiBaseUrl}${user.avatarUrl}';
@@ -416,12 +416,20 @@ String? fullAvatarUrl;
                   );
                 }
 
+                // Obtener ancho de pantalla para responsive
+                final screenWidth = MediaQuery.of(context).size.width;
+                final crossAxisCount = screenWidth >= 1200
+                    ? 4 // Desktop grande: 4 columnas
+                    : screenWidth >= 768
+                    ? 3 // Tablet: 3 columnas
+                    : 2; // Móvil: 2 columnas
+
                 return GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
                     childAspectRatio: 0.75,
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,

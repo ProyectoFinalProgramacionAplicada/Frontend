@@ -59,7 +59,8 @@ class AuthService {
         final status = resp.statusCode;
         final serverMessage = _extractMessageFromResponse(resp.data);
         if (status == 401) {
-          throw Exception('Credenciales inválidas. ${serverMessage ?? ''}');
+          // Evitar duplicación: si el servidor ya envía el mensaje, usarlo
+          throw Exception(serverMessage ?? 'Credenciales inválidas');
         }
         throw Exception(
           'Error en login (${status ?? '??'}). ${serverMessage ?? resp.statusMessage ?? ''}',
