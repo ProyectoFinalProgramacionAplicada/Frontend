@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:truekapp/screens/profile/seller_profile_screen.dart';
 import 'package:latlong2/latlong.dart';
 import '../../providers/listing_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/trade_provider.dart';
 import '../../dto/listing/listing_dto.dart';
 import '../../dto/trade/trade_create_dto.dart';
@@ -277,6 +278,8 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
   }
 
   Widget _buildListingDetails() {
+    final auth = context.watch<AuthProvider>();
+    final currentUserId = auth.user?.id;
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(
         horizontal: _ListingDetailStyle.pagePadding,
@@ -548,12 +551,97 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
 
           const SizedBox(height: _ListingDetailStyle.sectionSpacing),
 
-          // Sección Iniciar Trueque
-          _buildTradeSection(),
+          // Sección Cancelar o Iniciar Trueque (condicional)
+          (currentUserId == _listing!.ownerUserId)
+              ? _CancelOrder()
+              : _buildTradeSection(),
 
           const SizedBox(height: 32),
         ],
       ),
+    );
+  }
+
+  Widget _CancelOrder() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: _ListingDetailStyle.cardColor,
+        borderRadius: BorderRadius.circular(_ListingDetailStyle.borderRadius),
+        boxShadow: _ListingDetailStyle.softShadow,
+      ),
+      child: _isCreatingTrade
+          ? Center(
+              child: CircularProgressIndicator(
+                color: AppColors.errorColor,
+                strokeWidth: 3,
+              ),
+            )
+          : GestureDetector(
+              onTap: () async {
+                await context.read<ListingProvider>().deleteListing(
+                  _listingId!,
+                );
+
+                // Mensaje de éxito
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('La oferta se eliminó correctamente'),
+                      backgroundColor: Colors.green,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                  // Navegar a /home después de eliminar
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    AppRoutes.home,
+                    (route) => false,
+                  );
+                }
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.errorColor,
+                      AppColors.errorColor.withOpacity(0.85),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(
+                    _ListingDetailStyle.smallBorderRadius,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.errorColor.withOpacity(0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.handshake_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Eliminar Oferta',
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
     );
   }
 
