@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:html' as html show window;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -140,13 +141,25 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         backgroundColor: _MainScreenStyle.backgroundColor,
         elevation: 0,
         scrolledUnderElevation: 0,
-        title: Text(
-          'TruekApp',
-          style: GoogleFonts.inter(
-            fontWeight: FontWeight.w700,
-            fontSize: 22,
-            color: const Color(0xFF0F172A),
-          ),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SvgPicture.asset(
+              'assets/icons/truekapp_logo.svg',
+              height: 32,
+              width: 32,
+              semanticsLabel: 'TruekApp logo',
+            ),
+            const SizedBox(width: 10),
+            Text(
+              'TruekApp',
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w700,
+                fontSize: 22,
+                color: const Color(0xFF0F172A),
+              ),
+            ),
+          ],
         ),
         leading: Container(
           margin: const EdgeInsets.all(8),

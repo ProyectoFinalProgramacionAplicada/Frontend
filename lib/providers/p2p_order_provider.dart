@@ -150,12 +150,27 @@ class P2POrderProvider with ChangeNotifier {
       cacheTrackedOrder(updated);
       await fetchOrderBook();
       return updated;
-    } on DioException {
+    } on DioException catch (error) {
+      if (error.response?.statusCode == 400) {
+        final data = error.response?.data;
+        final message = _extractBadRequestMessage(data);
+        throw Exception(message);
+      }
       rethrow;
     } finally {
       _takingOrderId = null;
       notifyListeners();
     }
+  }
+
+  String _extractBadRequestMessage(dynamic data) {
+    if (data is String && data.trim().isNotEmpty) {
+      return data.trim();
+    }
+    if (data is Map && data['message'] is String) {
+      return (data['message'] as String).trim();
+    }
+    return 'No se pudo tomar la orden. Verifica tu saldo de TrueCoins o el estado de la orden.';
   }
 
   List<P2POrderDto> getOrdersForUser(int? userId) {

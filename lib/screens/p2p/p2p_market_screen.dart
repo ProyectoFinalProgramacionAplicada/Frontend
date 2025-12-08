@@ -38,11 +38,20 @@ class _P2PMarketScreenState extends State<P2PMarketScreen> {
 
   String _mapError(Object error) {
     if (error is DioException) {
+      if (error.response?.statusCode == 400) {
+        return 'Necesitas más TrueCoins para poder tomar esta orden.';
+      }
       final data = error.response?.data;
       if (data is Map && data['message'] is String) {
         return data['message'] as String;
       }
       return error.message ?? 'No se pudo completar la acción.';
+    }
+    if (error is Exception) {
+      final text = error.toString().replaceFirst('Exception: ', '').trim();
+      if (text.isNotEmpty) {
+        return text;
+      }
     }
     return 'No se pudo completar la acción.';
   }

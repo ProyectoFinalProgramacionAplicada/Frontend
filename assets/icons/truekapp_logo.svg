@@ -1,0 +1,8 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <title>TruekApp Logo</title>
+  <circle cx="64" cy="64" r="52" fill="none" stroke="#0B5C3D" stroke-width="6"/>
+  <g fill="#0B5C3D">
+    <path d="M78 42h-32a4 4 0 0 0 0 8h24v6.35l12.4-10.05L70 36v6z"/>
+    <path d="M50 86h32a4 4 0 0 0 0-8H58v-6.35L45.6 81.7 58 92v-6z"/>
+  </g>
+</svg>
