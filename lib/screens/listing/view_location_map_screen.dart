@@ -1,58 +1,54 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import '../../core/app_export.dart';
 
-class PickLocationMapScreen extends StatefulWidget {
-  final LatLng initialPosition;
+class ViewLocationMapScreen extends StatefulWidget {
+  final LatLng position;
 
-  const PickLocationMapScreen({super.key, required this.initialPosition});
+  const ViewLocationMapScreen({super.key, required this.position});
 
   @override
-  State<PickLocationMapScreen> createState() => _PickLocationMapScreenState();
+  State<ViewLocationMapScreen> createState() => _ViewLocationMapScreenState();
 }
 
-class _PickLocationMapScreenState extends State<PickLocationMapScreen> {
-  late LatLng _selectedPosition;
+class _ViewLocationMapScreenState extends State<ViewLocationMapScreen> {
   late MapController _mapController;
 
   @override
   void initState() {
     super.initState();
-    _selectedPosition = widget.initialPosition;
     _mapController = MapController();
   }
 
   @override
   Widget build(BuildContext context) {
-    final tileUrl = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+    const tileUrl = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Seleccionar ubicación")),
+      appBar: AppBar(title: const Text("Ubicación del producto")),
       body: Stack(
         children: [
           FlutterMap(
             mapController: _mapController,
             options: MapOptions(
-              initialCenter: widget.initialPosition,
+              initialCenter: widget.position,
               initialZoom: 15,
-              onTap: (tapPosition, latlng) {
-                setState(() => _selectedPosition = latlng);
-              },
+              interactionOptions: const InteractionOptions(
+                flags: InteractiveFlag.all, // mover/zoom permitido
+              ),
             ),
             children: [
               TileLayer(
                 urlTemplate: tileUrl,
-                userAgentPackageName: 'com.truekapp.app',
+                userAgentPackageName: "com.truekapp.app",
               ),
 
               // 🔵 Círculo real de 1 km
               PolygonLayer(
                 polygons: [
                   Polygon(
-                    points: _generateCirclePoints(_selectedPosition, 1000),
+                    points: _generateCirclePoints(widget.position, 1000),
                     color: Colors.blue.withOpacity(0.3),
                     borderColor: Colors.blue,
                     borderStrokeWidth: 2,
@@ -60,17 +56,17 @@ class _PickLocationMapScreenState extends State<PickLocationMapScreen> {
                 ],
               ),
 
-              // 🔴 Marcador
+              // 🔴 Marcador fijo
               MarkerLayer(
                 markers: [
                   Marker(
-                    point: _selectedPosition,
+                    point: widget.position,
                     width: 50,
                     height: 50,
                     child: const Icon(
                       Icons.location_on,
-                      size: 40,
                       color: Colors.red,
+                      size: 40,
                     ),
                   ),
                 ],
@@ -86,7 +82,7 @@ class _PickLocationMapScreenState extends State<PickLocationMapScreen> {
               children: [
                 FloatingActionButton(
                   mini: true,
-                  heroTag: "zoom_in",
+                  heroTag: "zoom_in_view",
                   onPressed: () {
                     _mapController.move(
                       _mapController.center,
@@ -98,7 +94,7 @@ class _PickLocationMapScreenState extends State<PickLocationMapScreen> {
                 const SizedBox(height: 10),
                 FloatingActionButton(
                   mini: true,
-                  heroTag: "zoom_out",
+                  heroTag: "zoom_out_view",
                   onPressed: () {
                     _mapController.move(
                       _mapController.center,
@@ -110,32 +106,12 @@ class _PickLocationMapScreenState extends State<PickLocationMapScreen> {
               ],
             ),
           ),
-
-          // ✔ Botón de confirmar
-          Positioned(
-            bottom: 20,
-            left: 20,
-            right: 20,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.all(16),
-                backgroundColor: AppColors.primary,
-              ),
-              onPressed: () {
-                Navigator.pop(context, _selectedPosition);
-              },
-              child: const Text(
-                "Confirmar ubicación",
-                style: TextStyle(fontSize: 16),
-              ),
-            ),
-          ),
         ],
       ),
     );
   }
 
-  // 🔵 FUNCIÓN AÑADIDA AQUÍ
+  // 🔵 MISMA FUNCIÓN DEL PICK
   List<LatLng> _generateCirclePoints(LatLng center, double radiusInMeters) {
     const int segments = 64;
     const double earthRadius = 6378137.0;

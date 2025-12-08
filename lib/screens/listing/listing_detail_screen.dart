@@ -1,12 +1,14 @@
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:truekapp/screens/profile/seller_profile_screen.dart';
+import 'package:latlong2/latlong.dart';
 import '../../providers/listing_provider.dart';
 import '../../providers/trade_provider.dart';
 import '../../dto/listing/listing_dto.dart';
 import '../../dto/trade/trade_create_dto.dart';
 import '../../core/app_export.dart';
 import '../../screens/trade/trade_create_screen.dart';
+import '../../screens/listing/view_location_map_screen.dart';
 
 /// Constantes de estilo para ListingDetail - consistencia visual con Login/Register
 class _ListingDetailStyle {
@@ -449,6 +451,101 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
             ),
           ),
 
+          const SizedBox(height: _ListingDetailStyle.itemSpacing),
+
+          // Sección de ubicación
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: _ListingDetailStyle.cardColor,
+              borderRadius: BorderRadius.circular(
+                _ListingDetailStyle.borderRadius,
+              ),
+              boxShadow: _ListingDetailStyle.softShadow,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: _ListingDetailStyle.primaryColor.withOpacity(
+                          0.1,
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        Icons.location_on_rounded,
+                        color: _ListingDetailStyle.primaryColor,
+                        size: 18,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text('Ubicación', style: _ListingDetailStyle.titleStyle),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Ver mapa aproximado de dónde se encuentra este producto.',
+                  style: _ListingDetailStyle.bodyStyle,
+                ),
+                const SizedBox(height: 20),
+
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ViewLocationMapScreen(
+                          position: LatLng(
+                            _listing!.latitude,
+                            _listing!.longitude,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      color: _ListingDetailStyle.primaryColor,
+                      borderRadius: BorderRadius.circular(
+                        _ListingDetailStyle.smallBorderRadius,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _ListingDetailStyle.primaryColor.withOpacity(
+                            0.25,
+                          ),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.map_rounded, color: Colors.white),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Ver ubicación en el mapa',
+                          style: GoogleFonts.inter(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
           const SizedBox(height: _ListingDetailStyle.sectionSpacing),
 
           // Sección Iniciar Trueque
@@ -529,7 +626,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Vendido por', style: _ListingDetailStyle.labelStyle),
+                  Text('A la Venta por', style: _ListingDetailStyle.labelStyle),
                   const SizedBox(height: 4),
                   Text(
                     _listing!.ownerName ?? 'Anónimo',
