@@ -2088,7 +2088,7 @@ class _AddItemTabState extends State<_AddItemTab> {
                           ),
                           border: Border.all(
                             color: _selectedLocation != null
-                                ? const Color(0xFF3B82F6)
+                                ? AppColors.primary
                                 : Colors.grey[300]!,
                           ),
                         ),
@@ -2100,7 +2100,7 @@ class _AddItemTabState extends State<_AddItemTab> {
                                   : Icons.check_circle_rounded,
                               color: _selectedLocation == null
                                   ? Colors.grey[500]
-                                  : const Color(0xFF3B82F6),
+                                  : AppColors.primary,
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -2111,7 +2111,7 @@ class _AddItemTabState extends State<_AddItemTab> {
                                 style: GoogleFonts.inter(
                                   color: _selectedLocation == null
                                       ? Colors.grey[600]
-                                      : const Color(0xFF3B82F6),
+                                      : AppColors.primary,
                                   fontWeight: _selectedLocation == null
                                       ? FontWeight.w400
                                       : FontWeight.w500,
