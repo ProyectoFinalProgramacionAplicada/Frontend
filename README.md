@@ -1,8 +1,19 @@
-<<<<<<< HEAD
-# truekapp
+# TruekApp - Frontend
 
-A new Flutter project.
-=======
-# Frontend
 Interfaz de usuario para explorar, publicar y realizar trueques dentro de TruekApp usando TruekCoins.
->>>>>>> 2ea050fcd74684d76713c8989ff245d7d5953205
+
+## 🌐 Aplicación en Producción
+
+**Link de producción:** https://app-250928235242.azurewebsites.net/
+
+## 📱 Descripción
+
+TruekApp es una plataforma de trueque innovadora que permite a los usuarios intercambiar productos y servicios utilizando un sistema de monedas virtuales llamado TrueCoins.
+
+## 🚀 Tecnologías
+
+- Flutter 3.9.2+
+- Dart
+- Provider (State Management)
+- Dio (HTTP Client)
+- Azure Web Services (Backend)

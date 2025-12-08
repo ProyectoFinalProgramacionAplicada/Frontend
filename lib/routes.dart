@@ -11,6 +11,8 @@ import 'screens/listing/listing_detail_screen.dart' hide MainScreen;
 import 'screens/wallet/wallet_screen.dart';
 // Importamos la nueva pantalla de perfil
 import 'screens/profile/profile_screen.dart';
+// Importamos la pantalla About
+import 'screens/about/about_page.dart';
 // Admin
 import 'screens/admin/admin_dashboard_screen.dart';
 import 'screens/admin/user_detail_screen.dart';
@@ -29,6 +31,7 @@ class AppRoutes {
   static const String settings = '/settings';
   // Nueva ruta constante
   static const String profile = '/profile';
+  static const String about = '/about';
   static const String adminActiveUsers = '/admin/active-users';
   static const String adminUserDetail = '/admin/user-detail';
 
@@ -53,6 +56,8 @@ class AppRoutes {
 
     // Registramos la pantalla de perfil aquí
     profile: (_) => const ProfileScreen(),
+    // Pantalla About
+    about: (_) => const AboutPage(),
     // Admin - Dashboard principal con métricas
     adminActiveUsers: (_) => const AdminDashboardScreen(),
     // Admin - Detalle de usuario

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:truekapp/dto/trade/trade_status.dart';
-
+import 'package:dio/dio.dart';
 // Imports propios (Ajusta las rutas si es necesario)
 import '../../core/app_export.dart'; // Para AppColors
 import '../../providers/auth_provider.dart';
@@ -39,10 +39,10 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final provider = Provider.of<TradeProvider>(context, listen: false);
-      
+
       // 1. Cargar historial antiguo (API REST)
       await provider.fetchMessages(_tradeId!);
-      
+
       // 2. Conectarse al tiempo real (SignalR)
       await provider.joinTradeChat(_tradeId!);
     });
@@ -52,7 +52,10 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
   void dispose() {
     // Salir del grupo al cerrar la pantalla
     if (_tradeId != null) {
-      Provider.of<TradeProvider>(context, listen: false).leaveTradeChat(_tradeId!);
+      Provider.of<TradeProvider>(
+        context,
+        listen: false,
+      ).leaveTradeChat(_tradeId!);
     }
     _messageController.dispose();
     _scrollController.dispose();
@@ -99,8 +102,7 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
     }
   }
 
-  // --- LÓGICA DE FINALIZAR TRUEQUE ---
-  void _showCompleteConfirmation(BuildContext context, int tradeId) {
+void _showCompleteConfirmation(BuildContext context, int tradeId) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -108,8 +110,8 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
         content: const Text(
           "Al confirmar:\n"
           "1. El producto se marcará como VENDIDO.\n"
-          "2. Esta conversación se cerrará.\n"
-          "3. El comprador podrá calificarte.\n\n"
+          "2. Se procesará la transacción de TrueCoins.\n"
+          "3. Esta conversación se cerrará.\n\n"
           "¿Confirmas que el intercambio fue exitoso?",
         ),
         actions: [
@@ -118,8 +120,14 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
             child: const Text("Cancelar"),
           ),
           TextButton(
+            child: const Text(
+              "Sí, Finalizar",
+              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+            ),
             onPressed: () async {
-              Navigator.pop(ctx); // Cierra diálogo
+              // 1. Cerrar el diálogo de confirmación primero
+              Navigator.pop(ctx); 
+
               try {
                 await Provider.of<TradeProvider>(
                   context,
@@ -134,24 +142,166 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                     ),
                   );
                 }
+              } on DioException catch (e) {
+                // Obtenemos el mensaje de error del Backend
+                // El backend devuelve mensajes en inglés ("Insufficient balance...") o español
+                final errorMsg = e.response?.data.toString().toLowerCase() ?? '';
+
+                if (mounted) {
+                  // CASO 1: Falta Aceptar (Error 400 + texto específico)
+                  if (errorMsg.contains("aceptados")) {
+                    _showAcceptRequiredDialog(tradeId);
+                  }
+                  // CASO 2: Saldo Insuficiente (Error 400 + texto específico)
+                  // Validamos tanto inglés como español por seguridad
+                  else if (errorMsg.contains("saldo") || errorMsg.contains("insufficient") || errorMsg.contains("balance")) {
+                    _showInsufficientFundsDialog();
+                  }
+                  // CASO 3: Otro error (Snack bar rojo)
+                  else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text("Error: ${e.response?.data ?? e.message}"),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
               } catch (e) {
+                // Errores no controlados
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text("Error: $e"),
+                      content: Text("Error inesperado: $e"),
                       backgroundColor: Colors.red,
                     ),
                   );
                 }
               }
             },
-            child: const Text(
-              "Sí, Finalizar",
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.green,
-              ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAcceptRequiredDialog(int tradeId) {
+    showDialog(
+      context: context,
+      builder: (BuildContext ctx) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: const [
+              Icon(Icons.info_outline, color: Colors.orange, size: 28),
+              SizedBox(width: 10),
+              Expanded(child: Text("Falta un paso previo", style: TextStyle(fontSize: 18))),
+            ],
+          ),
+          content: const Text(
+            "Para finalizar un intercambio, primero debes ACEPTARLO formalmente.\n\n"
+            "Esto confirma que ambas partes están de acuerdo con los términos antes de cerrar el trato.",
+            style: TextStyle(fontSize: 14),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text("Entendido", style: TextStyle(color: Colors.grey)),
             ),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.handshake, color: Colors.white, size: 18),
+              label: const Text("Aceptar Trueque Ahora"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange, // Color distintivo
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              onPressed: () async {
+                Navigator.of(ctx).pop(); // Cerramos la alerta
+                await _handleAceptarTrueque(tradeId); // Ejecutamos la acción
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _handleAceptarTrueque(int tradeId) async {
+    try {
+      await Provider.of<TradeProvider>(context, listen: false).acceptTrade(tradeId);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("¡Trueque aceptado! Ahora puedes finalizarlo."),
+            backgroundColor: Colors.blue,
+          ),
+        );
+      }
+    } on DioException catch (e) {
+      // CASO 1: Error de API estructurado (Ideal)
+      final errorData = e.response?.data.toString().toLowerCase() ?? '';
+      
+      if (errorData.contains("saldo") || errorData.contains("insufficient")) {
+        if (mounted) _showInsufficientFundsDialog();
+      } else {
+        _showErrorSnackBar("Error API: ${e.response?.data ?? e.message}");
+      }
+    } catch (e) {
+      // CASO 2: Error genérico o Exception transformada (Red de seguridad)
+      // Esto capturará el error incluso si el Provider no se arregló bien.
+      final msg = e.toString().toLowerCase();
+      
+      if (msg.contains("saldo") || msg.contains("insufficient")) {
+        if (mounted) _showInsufficientFundsDialog();
+      } else {
+        _showErrorSnackBar("Ocurrió un error inesperado: $e");
+      }
+    }
+  }
+
+  // Helper para no repetir código de SnackBar
+  void _showErrorSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
+  }
+  
+  void _showInsufficientFundsDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: const [
+            Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 28),
+            SizedBox(width: 10),
+            Expanded(child: Text("Saldo Insuficiente", style: TextStyle(fontSize: 18))),
+          ],
+        ),
+        content: const Text(
+          "Para aceptar este trueque se requiere una diferencia en TrueCoins, pero tu billetera no tiene fondos suficientes.\n\n"
+          "¿Deseas recargar ahora?",
+          style: TextStyle(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Cancelar", style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.account_balance_wallet, color: Colors.white),
+            label: const Text("Ir a Billetera"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.pushNamed(context, '/wallet');
+            },
           ),
         ],
       ),
@@ -193,8 +343,8 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
     final isCompleted = currentTrade.status == TradeStatus.Completed;
     final isCancelled = currentTrade.status == TradeStatus.Cancelled;
 
-    final String? otherUserAvatar = isSeller 
-        ? currentTrade.requesterAvatarUrl 
+    final String? otherUserAvatar = isSeller
+        ? currentTrade.requesterAvatarUrl
         : currentTrade.ownerAvatarUrl;
 
     return Scaffold(
@@ -275,8 +425,9 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                           builder: (_) => RateUserDialog(
                             toUserId: currentTrade.listingOwnerId,
                             tradeId: currentTrade.id,
-                            userName:
-                                "Vendedor", // Podrías pasar el nombre real si lo agregas al DTO
+                            userName: isBuyer
+                                ? (currentTrade.ownerName ?? "Vendedor")
+                                : (currentTrade.requesterName ?? "Comprador"),
                           ),
                         );
                       },
@@ -347,9 +498,12 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                   children: [
                     // Una animación simple de puntos o texto
                     SizedBox(
-                      width: 12, 
-                      height: 12, 
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.grey),
+                      width: 12,
+                      height: 12,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.grey,
+                      ),
                     ),
                     const SizedBox(width: 8),
                     Text(
@@ -401,11 +555,13 @@ class _TradeChatScreenState extends State<TradeChatScreen> {
                         textCapitalization: TextCapitalization.sentences,
                         onChanged: (text) {
                           if (text.isNotEmpty) {
-                            final myName = authProvider.currentUser?.displayName ?? "Alguien";
+                            final myName =
+                                authProvider.currentUser?.displayName ??
+                                "Alguien";
                             tradeProvider.notifyImTyping(_tradeId!, myName);
                           }
                         },
-                        
+
                         onSubmitted: (_) => _sendMessage(),
                       ),
                     ),

@@ -13,6 +13,7 @@ class TradeDto {
   final double? requestedTrueCoins;
   final int listingOwnerId;
   final int initiatorUserId;
+  final int? lastOfferByUserId;
   // --- CAMPOS VISUALES ---
   final String? requesterAvatarUrl;
   final String? ownerAvatarUrl;
@@ -34,6 +35,7 @@ class TradeDto {
     this.requestedTrueCoins,
     required this.listingOwnerId,
     required this.initiatorUserId,
+    this.lastOfferByUserId,
     this.requesterAvatarUrl,
     this.ownerAvatarUrl,
     this.requesterName, // <--- Agregar
@@ -65,6 +67,7 @@ class TradeDto {
           : null,
       listingOwnerId: json['listingOwnerId'] ?? json['ownerUserId'] ?? 0,
       initiatorUserId: json['initiatorUserId'] ?? json['requesterUserId'] ?? 0,
+      lastOfferByUserId: json['lastOfferByUserId'],
       
       // Mapeo visual
       requesterAvatarUrl: json['requesterAvatarUrl'],

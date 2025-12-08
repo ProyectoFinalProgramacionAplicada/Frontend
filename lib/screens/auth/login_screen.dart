@@ -8,6 +8,7 @@ import '../../services/auth_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../dto/auth/app_role.dart';
 import '../../widgets/floating_illustration.dart';
+import '../../widgets/fixed_domain_email_controller.dart';
 
 /// Pantalla de login rediseñada para TruekApp
 /// Inspirada en: https://dribbble.com/shots/16624797-LYD-Login-Screen-Animation
@@ -24,7 +25,8 @@ class _LoginScreenState extends State<LoginScreen>
   // ═══════════════════════════════════════════════════════════
   // CONTROLADORES (NO MODIFICAR - LÓGICA EXISTENTE)
   // ═══════════════════════════════════════════════════════════
-  final TextEditingController _emailController = TextEditingController();
+  final FixedDomainEmailController _emailController =
+      FixedDomainEmailController();
   final TextEditingController _passwordController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
@@ -186,7 +188,7 @@ class _LoginScreenState extends State<LoginScreen>
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final email = _emailController.text.trim();
+    final email = _emailController.email; // Usar .email en lugar de .text
     final password = _passwordController.text;
 
     setState(() => _isLoading = true);
@@ -256,7 +258,7 @@ class _LoginScreenState extends State<LoginScreen>
       context: context,
       barrierDismissible: false,
       builder: (ctx) =>
-          _ForgotPasswordDialog(initialEmail: _emailController.text.trim()),
+          _ForgotPasswordDialog(initialEmail: _emailController.email),
     );
   }
 
@@ -265,13 +267,20 @@ class _LoginScreenState extends State<LoginScreen>
   // ═══════════════════════════════════════════════════════════
 
   Widget _buildLogo() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+
+    // Tamaño adaptativo del logo
+    final logoSize = isMobile ? 140.0 : 150.0;
+    final iconSize = isMobile ? 105.0 : 115.0;
+
     return FadeTransition(
       opacity: _logoFadeAnimation,
       child: ScaleTransition(
         scale: _logoScaleAnimation,
         child: Container(
-          width: 170,
-          height: 170,
+          width: logoSize,
+          height: logoSize,
           decoration: BoxDecoration(
             color: Colors.white,
             shape: BoxShape.circle,
@@ -304,10 +313,10 @@ class _LoginScreenState extends State<LoginScreen>
                 ],
               ),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.swap_horiz_rounded,
-              size: 130,
-              color: Color(0xFF166534),
+              size: iconSize,
+              color: const Color(0xFF166534),
             ),
           ),
         ),
@@ -316,6 +325,9 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Widget _buildTitle() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+
     return FadeTransition(
       opacity: _fadeAnimation,
       child: Column(
@@ -324,21 +336,21 @@ class _LoginScreenState extends State<LoginScreen>
             'Bienvenido a TruekApp',
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(
-              fontSize: 30,
-              fontWeight: FontWeight.w800,
-              color: const Color(0xFF0F172A),
+              fontSize: isMobile ? 28 : 32,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF2F2F2F),
               letterSpacing: -0.5,
               height: 1.2,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: isMobile ? 8 : 10),
           Text(
             'El futuro del intercambio empieza con vos.',
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(
-              fontSize: 15,
+              fontSize: isMobile ? 14 : 15,
               fontWeight: FontWeight.w400,
-              color: AppColors.neutralDark.withOpacity(0.8),
+              color: const Color(0xFF2F2F2F).withOpacity(0.6),
               height: 1.4,
             ),
           ),
@@ -358,6 +370,7 @@ class _LoginScreenState extends State<LoginScreen>
     String? Function(String?)? validator,
     TextInputAction textInputAction = TextInputAction.next,
     void Function(String)? onFieldSubmitted,
+    TextInputType? keyboardType,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -374,100 +387,87 @@ class _LoginScreenState extends State<LoginScreen>
             ),
           ),
         ),
-        // Input field con borde completo
-        Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            color: Colors.white,
-            boxShadow: isFocused
-                ? [
-                    BoxShadow(
-                      color: const Color(0xFF166534).withOpacity(0.15),
-                      blurRadius: 0,
-                      spreadRadius: 2,
-                    ),
-                  ]
-                : [],
+
+        // Input field
+        TextFormField(
+          controller: controller,
+          focusNode: focusNode,
+          obscureText: isPassword && _obscurePassword,
+          validator: validator,
+          textInputAction: textInputAction,
+          onFieldSubmitted: onFieldSubmitted,
+          keyboardType: keyboardType,
+          style: GoogleFonts.inter(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: const Color(0xFF0F172A),
           ),
-          child: TextFormField(
-            controller: controller,
-            focusNode: focusNode,
-            obscureText: isPassword && _obscurePassword,
-            validator: validator,
-            textInputAction: textInputAction,
-            onFieldSubmitted: onFieldSubmitted,
-            style: GoogleFonts.inter(
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: GoogleFonts.inter(
               fontSize: 15,
-              fontWeight: FontWeight.w500,
-              color: const Color(0xFF0F172A),
+              fontWeight: FontWeight.w400,
+              color: const Color(0xFF94A3B8),
             ),
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: GoogleFonts.inter(
-                fontSize: 15,
-                fontWeight: FontWeight.w400,
-                color: const Color(0xFF94A3B8),
+            prefixIcon: Icon(
+              icon,
+              color: isFocused
+                  ? const Color(0xFF166534)
+                  : const Color(0xFF64748B),
+              size: 22,
+            ),
+            suffixIcon: isPassword
+                ? GestureDetector(
+                    onTap: () =>
+                        setState(() => _obscurePassword = !_obscurePassword),
+                    child: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      color: const Color(0xFF64748B),
+                      size: 22,
+                    ),
+                  )
+                : null,
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 16,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Color(0xFFE2E8F0),
+                width: 1.0,
               ),
-              prefixIcon: Icon(
-                icon,
-                color: isFocused
-                    ? const Color(0xFF166534)
-                    : const Color(0xFF64748B),
-                size: 22,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Color(0xFFE2E8F0),
+                width: 1.0,
               ),
-              suffixIcon: isPassword
-                  ? GestureDetector(
-                      onTap: () =>
-                          setState(() => _obscurePassword = !_obscurePassword),
-                      child: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_off_outlined
-                            : Icons.visibility_outlined,
-                        color: const Color(0xFF64748B),
-                        size: 22,
-                      ),
-                    )
-                  : null,
-              filled: true,
-              fillColor: Colors.white,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 16,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Color(0xFF166534),
+                width: 2.0,
               ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: Color(0xFFE2E8F0),
-                  width: 1.0,
-                ),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: Color(0xFFE2E8F0),
-                  width: 1.0,
-                ),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: Color(0xFF166534),
-                  width: 2.0,
-                ),
-              ),
-              errorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: AppColors.errorColor, width: 1.0),
-              ),
-              focusedErrorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: AppColors.errorColor, width: 2.0),
-              ),
-              errorStyle: GoogleFonts.inter(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: AppColors.errorColor,
-              ),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.errorColor, width: 1.0),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.errorColor, width: 2.0),
+            ),
+            errorStyle: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: AppColors.errorColor,
             ),
           ),
         ),
@@ -542,13 +542,14 @@ class _LoginScreenState extends State<LoginScreen>
               _buildInputField(
                 controller: _emailController,
                 label: 'Email',
-                hint: 'tu@email.com',
+                hint: 'usuario@gmail.com',
                 icon: Icons.email_outlined,
                 focusNode: _emailFocusNode,
                 isFocused: _isEmailFocused,
                 validator: _validateEmail,
+                keyboardType: TextInputType.emailAddress,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
 
               // Password
               _buildInputField(
@@ -570,7 +571,10 @@ class _LoginScreenState extends State<LoginScreen>
                 child: TextButton(
                   onPressed: _showForgotPasswordDialog,
                   style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 6,
+                      horizontal: 0,
+                    ),
                   ),
                   child: Text(
                     '¿Olvidaste tu contraseña?',
@@ -582,7 +586,7 @@ class _LoginScreenState extends State<LoginScreen>
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
               // Login button
               _buildLoginButton(),
@@ -597,7 +601,7 @@ class _LoginScreenState extends State<LoginScreen>
     return FadeTransition(
       opacity: _fadeAnimation,
       child: Padding(
-        padding: const EdgeInsets.only(top: 28),
+        padding: const EdgeInsets.only(top: 24),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -633,10 +637,27 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
+    final size = MediaQuery.of(context).size;
+    final screenHeight = size.height;
+    final screenWidth = size.width;
+
+    // Determinar si es móvil o web
+    final isMobile = screenWidth < 600;
+    final isTablet = screenWidth >= 600 && screenWidth < 1024;
+    final isDesktop = screenWidth >= 1024;
+
+    // Espaciados adaptativos optimizados para TruekApp
+    final topSpacing = isMobile
+        ? (screenHeight > 800 ? screenHeight * 0.05 : screenHeight * 0.02)
+        : screenHeight * 0.04;
+
+    final logoSpacing = isMobile ? 20.0 : 24.0;
+    final titleSpacing = isMobile ? 24.0 : 28.0;
+    final footerSpacing = isMobile ? 16.0 : 20.0;
+    final bottomSpacing = isMobile ? 16.0 : 20.0;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: const Color(0xFFF4F4F4),
       body: Stack(
         children: [
           // Ilustraciones flotantes de fondo
@@ -646,32 +667,37 @@ class _LoginScreenState extends State<LoginScreen>
 
           // Contenido principal
           SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 28),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final contentMaxWidth = isDesktop ? 460.0 : 420.0;
+
+                final content = Padding(
+                  padding: EdgeInsets.symmetric(horizontal: isMobile ? 24 : 32),
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 420),
+                    constraints: BoxConstraints(
+                      maxWidth: contentMaxWidth,
+                      minHeight: constraints.maxHeight,
+                    ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Menos espacio arriba para subir todo
-                        SizedBox(height: screenHeight * 0.02),
+                        // Espacio superior flexible
+                        SizedBox(height: topSpacing),
 
-                        // Logo (más espacio después)
+                        // Logo
                         _buildLogo(),
-                        const SizedBox(height: 40),
+                        SizedBox(height: logoSpacing),
 
-                        // Título (más espacio después)
+                        // Título
                         _buildTitle(),
-                        const SizedBox(height: 48),
+                        SizedBox(height: titleSpacing),
 
-                        // Card del formulario - más elegante
+                        // Card del formulario
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 28,
-                            vertical: 32,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isMobile ? 24 : 28,
+                            vertical: isMobile ? 28 : 32,
                           ),
                           decoration: BoxDecoration(
                             color: Colors.white,
@@ -698,15 +724,80 @@ class _LoginScreenState extends State<LoginScreen>
                           child: _buildForm(),
                         ),
 
-                        // Footer
+                        // Footer "¿No tenés cuenta?"
                         _buildFooter(),
 
-                        SizedBox(height: screenHeight * 0.03),
+                        // Footer minimalista TruekApp
+                        SizedBox(height: footerSpacing),
+                        Column(
+                          children: [
+                            Text(
+                              '© 2025 TruekApp',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: const Color(0xFF2F2F2F).withOpacity(0.5),
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              'Versión 1.0.0',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w400,
+                                color: const Color(0xFF2F2F2F).withOpacity(0.5),
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              'de Santa Cruz pal mundo',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w400,
+                                color: const Color(0xFF2F2F2F).withOpacity(0.5),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            // Botón "Acerca de / Reglas de Uso"
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pushNamed(context, AppRoutes.about);
+                              },
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                              ),
+                              child: Text(
+                                'Acerca de / Reglas de Uso',
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF166534),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        // Espacio inferior
+                        SizedBox(height: bottomSpacing),
                       ],
                     ),
                   ),
-                ),
-              ),
+                );
+
+                return Center(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: content,
+                  ),
+                );
+              },
             ),
           ),
         ],

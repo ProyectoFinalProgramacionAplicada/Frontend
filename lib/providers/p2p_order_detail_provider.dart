@@ -17,7 +17,7 @@ class P2POrderDetailProvider with ChangeNotifier {
       isLoading = true;
       notifyListeners();
 
-      final response = await _dio.get('P2POrders/$id');
+      final response = await _dio.get('/P2POrders/$id');
       final data = response.data;
       if (data is Map<String, dynamic>) {
         currentOrder = P2POrderDto.fromJson(data);
@@ -34,14 +34,14 @@ class P2POrderDetailProvider with ChangeNotifier {
 
   Future<void> markAsPaid(int id) async {
     await _runAction(() async {
-      await _dio.patch('P2POrders/$id/paid');
+      await _dio.patch('/P2POrders/$id/paid');
       await loadOrder(id);
     });
   }
 
   Future<void> releaseOrder(int id) async {
     await _runAction(() async {
-      await _dio.patch('P2POrders/$id/release');
+      await _dio.patch('/P2POrders/$id/release');
       await loadOrder(id);
     });
   }

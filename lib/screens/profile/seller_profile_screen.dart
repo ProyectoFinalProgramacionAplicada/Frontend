@@ -67,12 +67,12 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                       radius: 40,
                       // Donde definas la URL o dentro del NetworkImage:
                       backgroundImage: fullAvatarUrl != null
-                        ? NetworkImage(
-                          fullAvatarUrl.startsWith('http')
-                            ? fullAvatarUrl
-                            : '${AppConstants.apiBaseUrl}${fullAvatarUrl}',
-                          )
-                        : null,
+                          ? NetworkImage(
+                              fullAvatarUrl.startsWith('http')
+                                  ? fullAvatarUrl
+                                  : '${AppConstants.apiBaseUrl}$fullAvatarUrl',
+                            )
+                          : null,
                       child: fullAvatarUrl == null
                           ? const Icon(Icons.person, size: 40)
                           : null,
@@ -301,9 +301,9 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                     radius: 20,
                     backgroundImage: avatarUrl != null
                         ? NetworkImage(
-                          avatarUrl.startsWith('http')
-                            ? avatarUrl
-                            : '${AppConstants.apiBaseUrl}${avatarUrl}',
+                            avatarUrl.startsWith('http')
+                                ? avatarUrl
+                                : '${AppConstants.apiBaseUrl}$avatarUrl',
                           )
                         : null,
                     child: avatarUrl == null

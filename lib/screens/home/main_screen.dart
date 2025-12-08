@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:html' as html show window;
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
@@ -279,14 +278,14 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
           ),
           child: SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.symmetric(vertical: 0),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // Handle bar
                   Container(
                     width: 40,
-                    height: 4,
+                    height: 1,
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
                       color: Colors.grey[300],
@@ -315,9 +314,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,
-                      vertical: 8,
+                      vertical: 1,
                     ),
-                    child: Divider(color: Colors.grey[200]),
+                    child: Divider(
+                      color: const Color.fromARGB(255, 65, 64, 64),
+                    ),
                   ),
                   _buildMenuItem(
                     icon: Icons.person_outline_rounded,
@@ -1146,7 +1147,7 @@ class _HomeTabState extends State<_HomeTab> {
           children: [
             // Imagen con aspect ratio fijo
             AspectRatio(
-              aspectRatio: 1.0,
+              aspectRatio: 1.2,
               child: ClipRRect(
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(16),
@@ -1639,7 +1640,6 @@ class _AddItemTabState extends State<_AddItemTab> {
       final title = _titleController.text;
       final description = _descController.text;
       final trueCoinValue = double.tryParse(_valueController.text);
-      
 
       if (trueCoinValue == null) {
         throw Exception("El valor de TrueCoins es inválido.");
@@ -1789,12 +1789,16 @@ class _AddItemTabState extends State<_AddItemTab> {
                         Text('Descripción', style: _MainScreenStyle.labelStyle),
                         // Botón Mágico
                         TextButton.icon(
-                          onPressed: _isGeneratingAi ? null : _generateDescriptionWithAI,
+                          onPressed: _isGeneratingAi
+                              ? null
+                              : _generateDescriptionWithAI,
                           icon: _isGeneratingAi
                               ? const SizedBox(
                                   width: 14,
                                   height: 14,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
                                 )
                               : Icon(
                                   Icons.auto_awesome,
@@ -1804,7 +1808,9 @@ class _AddItemTabState extends State<_AddItemTab> {
                           label: Text(
                             _isGeneratingAi ? "Mejorando..." : "Mejorar con IA",
                             style: GoogleFonts.inter(
-                              color: _isGeneratingAi ? Colors.grey : AppColors.primary,
+                              color: _isGeneratingAi
+                                  ? Colors.grey
+                                  : AppColors.primary,
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                             ),
@@ -2381,18 +2387,18 @@ class _MessagesTabState extends State<_MessagesTab> {
     );
   }
 
-Widget _buildTradeCard(
+  Widget _buildTradeCard(
     TradeDto trade,
     int currentUserId,
     TradeProvider tradeProvider,
   ) {
     final isBuying = trade.requesterUserId == currentUserId;
-    
+
     // Lógica para saber el nombre del OTRO
     // Si yo compro (requester), el otro es el owner.
     // Si yo vendo (owner), el otro es el requester.
-    final otherUserName = isBuying 
-        ? (trade.ownerName ?? "Vendedor") 
+    final otherUserName = isBuying
+        ? (trade.ownerName ?? "Vendedor")
         : (trade.requesterName ?? "Comprador");
 
     return GestureDetector(
@@ -2422,7 +2428,9 @@ Widget _buildTradeCard(
               ),
               child: Center(
                 child: Text(
-                  otherUserName.isNotEmpty ? otherUserName[0].toUpperCase() : "?",
+                  otherUserName.isNotEmpty
+                      ? otherUserName[0].toUpperCase()
+                      : "?",
                   style: GoogleFonts.inter(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -2446,10 +2454,11 @@ Widget _buildTradeCard(
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: (isBuying
-                                  ? const Color(0xFF22C55E)
-                                  : const Color(0xFFF97316))
-                              .withOpacity(0.1),
+                          color:
+                              (isBuying
+                                      ? const Color(0xFF22C55E)
+                                      : const Color(0xFFF97316))
+                                  .withOpacity(0.1),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
@@ -2812,36 +2821,37 @@ class _WalletEntryTile extends StatelessWidget {
 
   String _entryDescription(WalletEntryType type) {
     switch (type) {
-      case WalletEntryType.Deposit:
-        return 'Depósito';
-      case WalletEntryType.Withdrawal:
-        return 'Retiro';
-      case WalletEntryType.TradeSent:
+      case WalletEntryType.EarnedByTrade:
+        return 'Ganancia por trueque';
+      case WalletEntryType.SpentOnReward:
+        return 'Recompensa canjeada';
+      case WalletEntryType.AdminAdjustment:
+        return 'Ajuste de saldo';
+      case WalletEntryType.Bonus:
+        return 'Bono';
+      case WalletEntryType.InternalTransferOut:
         return 'Trueque enviado';
-      case WalletEntryType.TradeReceived:
+      case WalletEntryType.InternalTransferIn:
         return 'Trueque recibido';
       case WalletEntryType.P2PDeposit:
         return 'Recarga P2P';
-      case WalletEntryType.P2PWithdrawal:
+      case WalletEntryType.P2PWithdraw:
         return 'Retiro P2P';
-      case WalletEntryType.Adjustment:
-        return 'Ajuste de saldo';
     }
   }
 
   IconData _getTypeIcon(WalletEntryType type) {
     switch (type) {
-      case WalletEntryType.Deposit:
+      case WalletEntryType.EarnedByTrade:
+      case WalletEntryType.InternalTransferIn:
       case WalletEntryType.P2PDeposit:
+      case WalletEntryType.Bonus:
         return Icons.add_circle_rounded;
-      case WalletEntryType.Withdrawal:
-      case WalletEntryType.P2PWithdrawal:
+      case WalletEntryType.SpentOnReward:
+      case WalletEntryType.InternalTransferOut:
+      case WalletEntryType.P2PWithdraw:
         return Icons.remove_circle_rounded;
-      case WalletEntryType.TradeSent:
-        return Icons.send_rounded;
-      case WalletEntryType.TradeReceived:
-        return Icons.call_received_rounded;
-      case WalletEntryType.Adjustment:
+      case WalletEntryType.AdminAdjustment:
         return Icons.tune_rounded;
     }
   }
